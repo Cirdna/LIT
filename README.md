@@ -95,7 +95,7 @@ touching Stage 3 reconciliation or the output schema:
 
 | backend | model | needs | pages processed |
 |---|---|---|---|
-| `openrouter` (default) | any vision-capable slug, default `anthropic/claude-sonnet-5` | `OPENROUTER_API_KEY` | concurrently (default 4) |
+| `openrouter` (default) | any vision-capable slug, default `google/gemini-3.8-flash` | `OPENROUTER_API_KEY` | concurrently (default 4) |
 | `qwen` | Qwen2.5-VL-7B-Instruct | `pip install -e ".[local]"` + a GPU | serially |
 | `internvl` | InternVL2_5-8B | `pip install -e ".[local]"` + a GPU | serially |
 

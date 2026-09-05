@@ -45,7 +45,7 @@ DEFAULT_INTERNVL_MODEL_ID = "OpenGVLab/InternVL2_5-8B"
 
 # Any vision-capable OpenRouter model slug works; override with --model-id.
 # See https://openrouter.ai/models for the current catalogue.
-DEFAULT_OPENROUTER_MODEL_ID = "anthropic/claude-sonnet-5"
+DEFAULT_OPENROUTER_MODEL_ID = "google/gemini-3.8-flash"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
