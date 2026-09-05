@@ -13,6 +13,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "stub": "tsx scripts/stub-worker.ts",
+    "worker": "tsx scripts/real-worker.ts",
     "seed": "tsx prisma/seed.ts",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",

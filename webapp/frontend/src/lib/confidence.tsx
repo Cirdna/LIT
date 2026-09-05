@@ -1,12 +1,41 @@
 // The confidence encoding. This is the product's one non-negotiable: every value
-// carries a tier, and low-confidence values must be distinct from high-confidence
+// carries a label, and low-confidence values must be distinct from high-confidence
 // ones AT A GLANCE — including for colour-blind users and on a projector at 3
 // metres. So the encoding is never colour alone: it combines a verbal label, a
-// glyph, and a border treatment. Lists additionally sort uncertain items upward
-// (see `rank`). No percentages anywhere — non-experts misread them.
+// glyph, and a border treatment. No percentages anywhere — non-experts misread them.
+//
+// There are exactly THREE labels a reader ever sees ABOUT AN EXTRACTED VALUE:
+//
+//   Quoted   (green)  — grounded: Stage 3 located this text on the cited page
+//   Inferred (yellow) — extracted but not grounded, or assembled/deduced
+//   NA       (red)    — nothing extracted, or no field at all
+//
+// The pipeline's five-tier vocabulary still travels in the data (and still drives
+// the plain-language reasons below), but `labelForField` / `labelForTier` are the
+// ONLY things that decide what a reader sees. Every display component calls one
+// of them — scattering that decision is how the confidence signal drifts apart
+// between screens.
+//
+// A FOURTH badge exists for the statute layer:
+//
+//   Statute  (navy)   — supplied by legislation, not read from this contract
+//
+// It sits outside the green/yellow/red ramp on purpose. Those three all answer
+// "how well did we read the page?", and a statutory default has no page to read:
+// it is what the law provides when the contract is silent. Giving it any of the
+// three would be a false claim about the document — Quoted would be a lie, and
+// Inferred/NA would both imply we tried and failed to find it in the text. So it
+// gets its own colour, its own glyph (§), and no confidence tier at all. The
+// meaning of the other three is unchanged.
 import type { ConfidenceTier, FieldDTO } from "./api";
 
-type TierMeta = {
+/** The three labels that describe how well we read the contract. */
+export type DisplayLabel = "quoted" | "inferred" | "na";
+
+/** Everything the badge can render, including the non-confidence statute state. */
+export type BadgeLabel = DisplayLabel | "statutory";
+
+type LabelMeta = {
   rank: number; // lower = more confident; drives upward sorting of uncertainty
   short: string;
   label: string;
@@ -17,65 +46,78 @@ type TierMeta = {
   barBorder: string; // left-rule treatment (structural cue)
 };
 
-export const TIER_META: Record<ConfidenceTier, TierMeta> = {
-  verbatim: {
+export const LABEL_META: Record<BadgeLabel, LabelMeta> = {
+  quoted: {
     rank: 0,
     short: "Quoted",
-    label: "Quoted from the contract",
+    label: "Quoted from the contract — found on the cited page",
     glyph: "✓",
     text: "text-ok",
     bg: "bg-okbg",
     border: "border-ok/40",
     barBorder: "border-l-4 border-l-ok border-solid",
   },
-  normalised: {
-    rank: 1,
-    short: "Standardised",
-    label: "Read and standardised from the contract",
-    glyph: "=",
-    text: "text-ok",
-    bg: "bg-okbg",
-    border: "border-ok/30",
-    barBorder: "border-l-4 border-l-ok/70 border-solid",
-  },
-  assembled: {
-    rank: 2,
-    short: "Assembled",
-    label: "Assembled from more than one clause",
-    glyph: "+",
-    text: "text-warn",
-    bg: "bg-warnbg",
-    border: "border-warn/40",
-    barBorder: "border-l-4 border-l-warn border-solid",
-  },
   inferred: {
-    rank: 3,
+    rank: 1,
     short: "Inferred",
-    label: "Inferred — check this",
+    label: "Inferred — not found verbatim on the cited page, so check it",
     glyph: "~",
     text: "text-warn",
     bg: "bg-warnbg",
     border: "border-warn/50",
     barBorder: "border-l-4 border-l-warn border-dashed",
   },
-  unverified: {
-    rank: 4,
-    short: "Suspected error",
-    label: "Suspected error — not found in the cited clause",
-    glyph: "!",
+  na: {
+    rank: 2,
+    short: "NA",
+    label: "Not extracted — this tool has no value for this field",
+    glyph: "—",
     text: "text-alert",
     bg: "bg-alertbg",
     border: "border-alert/50",
-    barBorder: "border-l-4 border-l-alert border-double",
+    barBorder: "border-l-4 border-l-alert border-dotted",
+  },
+  statutory: {
+    rank: 3, // sorts last; it is not a rung on the confidence ladder
+    short: "Statute",
+    label: "Supplied by statute — this is not quoted from your contract",
+    glyph: "§",
+    text: "text-navy",
+    bg: "bg-navybg",
+    border: "border-navy/40",
+    barBorder: "border-l-4 border-l-navy border-double",
   },
 };
 
-export function tierRank(t: ConfidenceTier): number {
-  return TIER_META[t].rank;
+/** The filter's vocabulary: the three read-quality labels only. */
+export const LABEL_ORDER: DisplayLabel[] = ["quoted", "inferred", "na"];
+
+/** For anything that always carries a value (calendar events, conflicts). */
+export function labelForTier(tier: ConfidenceTier | string): DisplayLabel {
+  return tier === "verbatim" || tier === "normalised" ? "quoted" : "inferred";
 }
 
-export function ConfidenceBadge({ tier, size = "md" }: { tier: ConfidenceTier; size?: "sm" | "md" }) {
-  const m = TIER_META[tier];
+/**
+ * The one mapping for a field. A field with no value is NA whatever tier the
+ * pipeline attached to the absence — "we have nothing" is the honest reading,
+ * and it must not borrow the confidence of a value that does not exist.
+ */
+export function labelForField(field: Pick<FieldDTO, "confidenceTier" | "valueVerbatim">): DisplayLabel {
+  if (field.valueVerbatim == null) return "na";
+  return labelForTier(field.confidenceTier);
+}
+
+/** A field key with no row at all reads the same as an empty one: NA. */
+export function labelForMissingField(): DisplayLabel {
+  return "na";
+}
+
+export function labelRank(label: BadgeLabel): number {
+  return LABEL_META[label].rank;
+}
+
+export function ConfidenceBadge({ label, size = "md" }: { label: BadgeLabel; size?: "sm" | "md" }) {
+  const m = LABEL_META[label];
   const pad = size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-sm";
   return (
     <span
@@ -99,9 +141,12 @@ export function ocrBand(mean: number | null): { word: string; tone: string } | n
 }
 
 /**
- * Plain-language evidence for a field's confidence. A tier badge alone is an
+ * Plain-language evidence for a field's confidence. A label alone is an
  * assertion; these reasons are what make the tool calibrated rather than
  * confident (§9). Scores become words, never numbers.
+ *
+ * This is where the five-tier detail still earns its keep: collapsing the badge
+ * to three labels must not lose WHY something is uncertain.
  */
 export function reasonsFor(field: FieldDTO): string[] {
   const out: string[] = [];

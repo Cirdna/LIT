@@ -2,6 +2,8 @@ import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, type HandoffDTO } from "../lib/api";
+import { LABEL_META, labelForTier } from "../lib/confidence";
+import { formatDate, formatDateValue, formatDatesInText } from "../lib/format";
 import { ErrorState, Skeleton } from "../components/ui";
 
 export default function HandoffBrief() {
@@ -38,15 +40,15 @@ export default function HandoffBrief() {
       <article className="panel p-6">
         <header className="mb-5 border-b border-rule pb-4">
           <p className="eyebrow">Handoff brief for a lawyer</p>
-          <h1 className="mt-1 text-2xl font-bold text-ink">{brief.issue}</h1>
+          <h1 className="mt-1 text-2xl font-bold text-ink">{formatDatesInText(brief.issue)}</h1>
           <p className="mt-1 text-sm text-faint">
-            Prepared {new Date(brief.createdAt).toLocaleDateString()} · AITHENA reports facts from the documents; the
+            Prepared {formatDate(brief.createdAt)} · AITHENA reports facts from the documents; the
             judgement below needs a human.
           </p>
         </header>
 
         <Section n={1} title="The issue">
-          <p className="text-ink">{brief.issue}</p>
+          <p className="text-ink">{formatDatesInText(brief.issue)}</p>
         </Section>
 
         <Section n={2} title="Documents and clauses involved">
@@ -54,9 +56,12 @@ export default function HandoffBrief() {
             {brief.established.map((item, i) => (
               <li key={i} className="border-l-4 border-rule pl-3">
                 <div className="text-sm font-medium text-navy">{item.label}</div>
-                {item.detail && <blockquote className="mt-0.5 text-ink">“{item.detail}”</blockquote>}
+                {item.detail && (
+                  <blockquote className="mt-0.5 text-ink">“{formatDateValue(item.detail)}”</blockquote>
+                )}
                 <div className="mt-0.5 text-sm text-muted">
-                  {item.citation ?? "Clause not identified"} · confidence: {item.confidenceTier}
+                  {item.citation ?? "Clause not identified"} ·{" "}
+                  {LABEL_META[labelForTier(item.confidenceTier)].short}
                 </div>
               </li>
             ))}
@@ -68,7 +73,7 @@ export default function HandoffBrief() {
             {brief.established.map((item, i) => (
               <li key={i}>
                 {item.label}
-                {item.detail ? `: "${item.detail}"` : ""}.
+                {item.detail ? `: "${formatDateValue(item.detail)}"` : ""}.
               </li>
             ))}
             {brief.documents && brief.documents.length > 0 && (
@@ -89,7 +94,9 @@ export default function HandoffBrief() {
         </Section>
 
         <Section n={4} title="The specific question needing human judgement">
-          <p className="rounded border border-navy/30 bg-okbg p-3 text-lg font-medium text-ink">{brief.question}</p>
+          <p className="rounded border border-navy/30 bg-okbg p-3 text-lg font-medium text-ink">
+            {formatDatesInText(brief.question)}
+          </p>
         </Section>
       </article>
     </div>
@@ -108,20 +115,26 @@ function Section({ n, title, children }: { n: number; title: string; children: R
   );
 }
 
+// The copied/printed brief is what actually reaches the lawyer, so it carries the
+// same date format and the same three labels as the screen.
 function asPlainText(brief: HandoffDTO): string {
+  const issue = formatDatesInText(brief.issue);
   const lines: string[] = [];
-  lines.push(`HANDOFF BRIEF — ${brief.issue}`, "");
-  lines.push("1. THE ISSUE", brief.issue, "");
+  lines.push(`HANDOFF BRIEF — ${issue}`, "");
+  lines.push("1. THE ISSUE", issue, "");
   lines.push("2. DOCUMENTS AND CLAUSES INVOLVED");
   for (const item of brief.established) {
     lines.push(`- ${item.label}`);
-    if (item.detail) lines.push(`  "${item.detail}"`);
-    lines.push(`  ${item.citation ?? "Clause not identified"} (confidence: ${item.confidenceTier})`);
+    if (item.detail) lines.push(`  "${formatDateValue(item.detail)}"`);
+    lines.push(
+      `  ${item.citation ?? "Clause not identified"} (${LABEL_META[labelForTier(item.confidenceTier)].short})`,
+    );
   }
   lines.push("");
   lines.push("3. WHAT AITHENA ESTABLISHED");
-  for (const item of brief.established) lines.push(`- ${item.label}${item.detail ? `: "${item.detail}"` : ""}`);
+  for (const item of brief.established)
+    lines.push(`- ${item.label}${item.detail ? `: "${formatDateValue(item.detail)}"` : ""}`);
   lines.push("");
-  lines.push("4. THE SPECIFIC QUESTION NEEDING HUMAN JUDGEMENT", brief.question);
+  lines.push("4. THE SPECIFIC QUESTION NEEDING HUMAN JUDGEMENT", formatDatesInText(brief.question));
   return lines.join("\n");
 }

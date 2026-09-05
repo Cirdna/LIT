@@ -1,5 +1,6 @@
 import type { FieldDTO } from "../lib/api";
-import { ConfidenceBadge, TIER_META, reasonsFor } from "../lib/confidence";
+import { ConfidenceBadge, LABEL_META, labelForField, reasonsFor } from "../lib/confidence";
+import { formatDateValue } from "../lib/format";
 
 const ABSENCE_COPY: Record<string, { text: string; cls: string }> = {
   not_present: { text: "Not in this contract.", cls: "text-muted" },
@@ -28,7 +29,8 @@ export function FieldValue({
   active?: boolean;
   onCite?: (field: FieldDTO) => void;
 }) {
-  const m = TIER_META[field.confidenceTier];
+  const displayLabel = labelForField(field);
+  const m = LABEL_META[displayLabel];
   const reasons = reasonsFor(field);
   const bench = benchmarkLine(field);
   const canCite = field.anchorLineIds.length > 0 && !!onCite;
@@ -55,7 +57,7 @@ export function FieldValue({
     >
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm font-medium text-muted">{label}</span>
-        <ConfidenceBadge tier={field.confidenceTier} size="sm" />
+        <ConfidenceBadge label={displayLabel} size="sm" />
       </div>
 
       <div className="mt-1">
@@ -64,16 +66,21 @@ export function FieldValue({
         ) : hasValue ? (
           <p
             className={`text-[1.05rem] ${
-              field.confidenceTier === "unverified" ? "text-alert" : "text-ink"
+              field.confidenceTier === "unverified" ? "text-warn" : "text-ink"
             }`}
           >
+            {/* Struck through, but in the Inferred palette: red is reserved for NA
+                so the three labels stay unambiguous. The reason line below still
+                spells out that the quote was not found where it was cited. */}
             {field.confidenceTier === "unverified" ? (
               <>
-                <span className="line-through decoration-alert/60">{field.valueVerbatim}</span>{" "}
+                <span className="line-through decoration-warn/60">
+                  {formatDateValue(field.valueVerbatim!)}
+                </span>{" "}
                 <span className="text-sm font-medium">(suspected error)</span>
               </>
             ) : (
-              field.valueVerbatim
+              formatDateValue(field.valueVerbatim!)
             )}
           </p>
         ) : (

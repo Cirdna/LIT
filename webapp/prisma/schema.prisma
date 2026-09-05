@@ -58,6 +58,9 @@ model Document {
   calendarEvents CalendarEvent[]
   jobs           Job[]
 
+  statutoryDefaults StatutoryDefault[]
+  statuteFlags      StatuteFlag[]
+
   @@unique([workspaceId, sha256])
   @@map("documents")
 }
@@ -151,6 +154,65 @@ model ExtractedField {
 
   @@index([documentId, fieldKey])
   @@map("extracted_fields")
+}
+
+// The statute layer, kept in its own tables rather than in extracted_fields.
+// That separation is the safeguard: a statutory default has NO citation in the
+// contract, so if it shared a table with extraction it would inevitably render
+// with an extraction's confidence badge and read as something the document says.
+model StatutoryDefault {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId                String   @map("document_id") @db.Uuid
+  fieldName                 String   @map("field_name") // statute topic, e.g. 'satisfactory_quality'
+  statute                   String // 'Sale of Goods Act 1979 (2020 Rev Ed)'
+  citation                  String // 's.14(2)'
+  jurisdiction              String   @default("Singapore")
+  effect                    String // plain-language paraphrase; never a fabricated quotation
+  appliesWhen               String   @map("applies_when") // the precondition, unevaluated
+  displacedByCategories     String[] @default([]) @map("displaced_by_categories")
+  autoDisplacementSupported Boolean  @default(true) @map("auto_displacement_supported")
+  isDisplaced               Boolean  @default(false) @map("is_displaced")
+  displacedByClause         String?  @map("displaced_by_clause") // the clause that displaced it
+  displacedByPage           Int?     @map("displaced_by_page")
+  raisedBy                  String   @map("raised_by") // statute module, for traceability
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, fieldName])
+  @@map("statutory_defaults")
+}
+
+model StatuteFlag {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  flagId       String   @map("flag_id") // stable digest from the statute module
+  statute      String
+  citation     String
+  jurisdiction String   @default("Singapore")
+  // The CUAD category the flag came from, and the webapp field key it should
+  // render beside. Both are stored: the category is the durable identity, the
+  // field key is a display convenience that changes when the UI vocabulary does.
+  cuadCategory String   @map("cuad_category")
+  fieldKey     String?  @map("field_key")
+  trigger      String // what was detected, in plain language
+  reviewRequired String @map("review_required") // what a human must decide
+  factors      String[] @default([]) // what that decision turns on
+  excerpt      String // the clause as extracted, unmodified
+  sourceClause String?  @map("source_clause")
+  sourcePage   Int?     @map("source_page")
+  // null = not a reasonableness question; false = the Act allows no
+  // reasonableness escape; true = a statutory reasonableness test applies
+  reasonablenessTestApplies Boolean? @map("reasonableness_test_applies")
+  requiresHumanReview       Boolean  @default(true) @map("requires_human_review")
+  raisedBy                  String   @map("raised_by")
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, flagId])
+  @@index([documentId, fieldKey])
+  @@map("statute_flags")
 }
 
 model CalendarEvent {

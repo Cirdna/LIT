@@ -1,0 +1,69 @@
+{
+  "_readme": [
+    "Misrepresentation Act 1967 (2020 Rev Ed), Singapore. PHASE 1 OUTPUT, all unverified_draft.",
+    "",
+    "Note on authority_basis. The bare text of s.3 catches a term excluding liability or a",
+    "remedy for a pre-contractual misrepresentation. It does NOT say on its face that a",
+    "non-reliance or entire-agreement clause is such a term — that is judicial gloss. The",
+    "s.3 chunk is therefore split in two: the statute-text chunk quotes the section, and the",
+    "non-reliance application is a separate case_law_gloss chunk which must name the case it",
+    "rests on. That case citation is a KNOWN GAP: no case name has been invented for it.",
+    "See PHASE2_VERIFICATION.md."
+  ],
+  "chunks": [
+    {
+      "id": "sg_misrep_s3",
+      "category": "statute",
+      "source": "Misrepresentation Act 1967 (2020 Rev Ed)",
+      "legacy_citation": "Cap 390 (1994 Rev Ed)",
+      "provision": "Section 3",
+      "exact_wording": "If a contract contains a term which would exclude or restrict — (a) any liability to which a party to a contract may be subject by reason of any misrepresentation made by him before the contract was made; or (b) any remedy available to another party to the contract by reason of such a misrepresentation, that term shall be of no effect except in so far as it satisfies the requirement of reasonableness as stated in section 11(1) of the Unfair Contract Terms Act 1977, and it is for those claiming that the term satisfies that requirement to show that it does.",
+      "summary": "A term excluding liability or a remedy for pre-contractual misrepresentation has no effect unless it is reasonable, and the party relying on it must prove that it is.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "the contract contains a term that would exclude or restrict liability for, or a remedy in respect of, a misrepresentation made BEFORE the contract was made",
+        "AND the term is directed at pre-contractual statements — a clause limiting liability for breach of the contract's own obligations is not within s.3"
+      ],
+      "target_fields": ["cap_carve_outs", "liability_cap"],
+      "trigger_keywords": ["misrepresentation", "representation", "no liability", "exclude", "restrict"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/MA1967",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED from four rows on the retrieved page: the lead-in ('3. If a contract contains a term which would exclude or restrict —') appeared AFTER paragraphs (a) and (b) and the closing text in the page's table order. The reassembly is confident on content but must be checked for punctuation. Confirmed from source: the section imports section 11(1) of UCTA only — it does not import the Second Schedule."
+    },
+    {
+      "id": "sg_misrep_s3_nonreliance",
+      "category": "statute",
+      "source": "Misrepresentation Act 1967 (2020 Rev Ed)",
+      "legacy_citation": "Cap 390 (1994 Rev Ed)",
+      "provision": "Section 3 (as applied to non-reliance and entire agreement clauses)",
+      "exact_wording": "If a contract contains a term which would exclude or restrict — (a) any liability to which a party to a contract may be subject by reason of any misrepresentation made by him before the contract was made; or (b) any remedy available to another party to the contract by reason of such a misrepresentation, that term shall be of no effect except in so far as it satisfies the requirement of reasonableness as stated in section 11(1) of the Unfair Contract Terms Act 1977, and it is for those claiming that the term satisfies that requirement to show that it does.",
+      "summary": "Whether a non-reliance or entire-agreement clause is caught by section 3 turns on judicial interpretation, not on the words of the section. Where it is caught, the clause must satisfy the reasonableness test.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "the contract contains an entire agreement, non-reliance or acknowledgement-of-no-representation clause",
+        "AND the clause is being relied on to defeat a misrepresentation claim rather than merely to define the contractual terms",
+        "AND the supporting authority for treating such a clause as within s.3 has been confirmed — this chunk must not fire while supporting_authority is a placeholder"
+      ],
+      "target_fields": ["cap_carve_outs"],
+      "trigger_keywords": ["entire agreement", "non-reliance", "no reliance", "has not relied", "no representation", "acknowledges that no"],
+      "authority_basis": "case_law_gloss",
+      "supporting_authority": "UNRESOLVED — case citation required before this chunk may fire (see PHASE2_VERIFICATION.md)",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/MA1967",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "The exact_wording is the same section text as sg_misrep_s3, because the gloss adds no statutory words. What distinguishes this chunk is authority_basis=case_law_gloss plus a supporting_authority that has NOT been supplied. No case name was guessed: inventing one would be precisely the fabricated-citation defect the grounding mandate treats as fatal. Phase 2 must supply the Singapore authority or delete this chunk."
+    }
+  ]
+}

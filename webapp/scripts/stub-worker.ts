@@ -12,6 +12,14 @@
 //
 //   npm run seed && npm run stub
 //
+// DEMO CORPUS ONLY. Every value this worker writes is fabricated from the
+// filename, so it must never be the thing that answers for a document a user
+// actually uploaded — a plausible invented liability cap is the worst possible
+// output. It therefore processes only the seeded corpus (scripts/corpus.ts) and
+// requeues anything else for the real worker (scripts/real-worker.ts). Set
+// STUB_ALLOW_ANY=1 to fabricate data for arbitrary files anyway, which is useful
+// for UI work and for nothing else.
+//
 import "../src/env.js"; // must run before anything reads process.env
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -22,8 +30,13 @@ import { getWorkspaceId } from "../src/lib/workspace.js";
 import { ALL_FIELD_KEYS } from "../src/lib/domain.js";
 import type { ConfidenceTier, ClaimType, AbsenceReason } from "../src/lib/domain.js";
 import { buildBriefFromConflict } from "../src/lib/handoff.js";
-import { profileForFilename, type CorpusProfile } from "./corpus.js";
+import { CORPUS, profileForFilename, type CorpusProfile } from "./corpus.js";
 import { encodePng, fillRect, makeCanvas, type Rgba } from "./png.js";
+
+// See the file header: fabricated data is allowed to answer for the seeded demo
+// corpus and, if you insist, for anything else.
+const STUB_ALLOW_ANY = process.env.STUB_ALLOW_ANY === "1";
+const DEMO_FILENAMES = new Set(CORPUS.map((c) => c.filename));
 
 const PAGE_W = 612; // US Letter, PDF points
 const PAGE_H = 792;
@@ -407,6 +420,10 @@ async function setProgress(jobId: string, stage: string, progress: number) {
 async function processDocument(jobId: string, documentId: string) {
   const doc = await prisma.document.findUnique({ where: { id: documentId } });
   if (!doc) throw new Error(`document ${documentId} not found`);
+
+  // Refuse to invent an answer for a document nobody asked us to fake.
+  if (!STUB_ALLOW_ANY && !DEMO_FILENAMES.has(doc.filename)) return { skipped: true } as const;
+
   const profile = profileForFilename(doc.filename);
   const meta = metaFor(profile);
 
@@ -578,7 +595,7 @@ async function processDocument(jobId: string, documentId: string) {
   });
 
   await setProgress(jobId, "done", 1);
-  return { profile, exclusivityFieldId: createdFieldIds.exclusivity };
+  return { skipped: false, profile, exclusivityFieldId: createdFieldIds.exclusivity } as const;
 }
 
 // After both distribution agreements are ready, raise the exclusivity conflict
@@ -665,7 +682,18 @@ async function main() {
     console.log(`> job ${job.id} (${job.job_type}) doc=${job.document_id}`);
     try {
       if (job.document_id) {
-        await processDocument(job.id, job.document_id);
+        const result = await processDocument(job.id, job.document_id);
+        if (result.skipped) {
+          // Hand it back rather than fabricating. `npm run worker` will read the
+          // actual file; if nothing else is running, the job simply stays queued.
+          await prisma.job.update({
+            where: { id: job.id },
+            data: { status: "queued", startedAt: null, stage: "not demo corpus — left for the real worker" },
+          });
+          console.log(`  skipped ${job.id}: not seeded demo corpus; requeued for the real worker`);
+          await sleep(2500);
+          continue;
+        }
         await maybeRaiseExclusivityConflict(workspaceId);
       }
       await prisma.job.update({ where: { id: job.id }, data: { status: "done", progress: 1, finishedAt: new Date() } });

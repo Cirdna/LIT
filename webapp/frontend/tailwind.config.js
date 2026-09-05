@@ -14,6 +14,8 @@ export default {
         rule: "#d7dbe0",
         navy: "#1f3a5f", // primary
         navydark: "#152a44",
+        navybg: "#e7ecf3", // tint behind the statute badge — outside the confidence ramp
+
         // Confidence semantics — always paired with a label + a structural cue,
         // never colour alone.
         ok: "#166b46",

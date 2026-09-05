@@ -1,0 +1,121 @@
+{
+  "_readme": [
+    "Frustrated Contracts Act 1959 (2020 Rev Ed), Singapore. PHASE 1 OUTPUT, all unverified_draft.",
+    "",
+    "SECTION MAPPING NOTE: the loss-allocation machinery is in s.2, and the provision that",
+    "makes a contract's own force majeure clause take precedence is s.3(3). The excluded",
+    "contract types are in s.3(5). The existing statutes/frustration.py module cites 's.3'",
+    "for the precedence rule, which is right at section level but imprecise — the subsection",
+    "is s.3(3).",
+    "",
+    "Per spec v2.1 §4 this is a low-frequency trigger: it fires only where NO force majeure",
+    "clause is found, and it reports the statutory background position, never a prediction",
+    "about whether a contract is frustrated."
+  ],
+  "chunks": [
+    {
+      "id": "sg_fca_s2_2",
+      "category": "statute",
+      "source": "Frustrated Contracts Act 1959 (2020 Rev Ed)",
+      "legacy_citation": "Cap 115 (2014 Rev Ed)",
+      "provision": "Section 2(2)",
+      "exact_wording": "Subject to subsection (3), all sums paid or payable to any party in pursuance of the contract before the time when the parties were so discharged (referred to in this Act as the time of discharge) shall, in the case of sums so paid, be recoverable from him as money received by him for the use of the party by whom the sums were paid, and, in the case of sums so payable, cease to be so payable.",
+      "summary": "If a contract is frustrated, sums already paid are in principle recoverable and sums still due stop being payable — subject to the expenses allowance in subsection (3).",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "the contract has become impossible of performance or been otherwise frustrated AND the parties have been discharged (section 2(1)) — this is a question of fact about events, which this tool does not determine",
+        "AND the contract does not make its own provision for those circumstances (section 3(3)), because such a provision takes precedence",
+        "AND the contract is not of an excluded type under section 3(5)"
+      ],
+      "target_fields": ["force_majeure", "payment_amount", "payment_schedule"],
+      "trigger_keywords": ["force majeure", "frustration", "impossible", "beyond the reasonable control", "act of God"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/FCA1959",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "The first applicability condition can never be satisfied by document review alone — whether a frustrating event has occurred is not on the page. Any flag built on this chunk must therefore be phrased as background information about the default regime, which is exactly what v2.1 §4 requires."
+    },
+    {
+      "id": "sg_fca_s2_3",
+      "category": "statute",
+      "source": "Frustrated Contracts Act 1959 (2020 Rev Ed)",
+      "legacy_citation": "Cap 115 (2014 Rev Ed)",
+      "provision": "Section 2(3)",
+      "exact_wording": "If the party to whom the sums were so paid or payable under subsection (2) incurred expenses before the time of discharge in, or for the purpose of, the performance of the contract, the court may, if it considers it just to do so having regard to all the circumstances of the case, allow him to retain or, as the case may be, recover the whole or any part of the sums so paid or payable, not being an amount in excess of the expenses so incurred.",
+      "summary": "A party who incurred expenses before discharge may be allowed to keep or recover part of the sums paid, up to the amount of those expenses, if the court thinks it just.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "section 2(2) is engaged",
+        "AND the recipient incurred expenses before the time of discharge in or for the purpose of performance"
+      ],
+      "target_fields": ["force_majeure", "payment_amount"],
+      "trigger_keywords": ["force majeure", "frustration", "expenses", "prepayment", "deposit", "non-refundable"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/FCA1959",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Relevant where a contract takes a non-refundable deposit: the statutory position is discretionary and capped at actual expenses, which is not the same as the clause's own wording. Worth surfacing as a difference to review, not as a conclusion that the clause fails."
+    },
+    {
+      "id": "sg_fca_s3_3",
+      "category": "statute",
+      "source": "Frustrated Contracts Act 1959 (2020 Rev Ed)",
+      "legacy_citation": "Cap 115 (2014 Rev Ed)",
+      "provision": "Section 3(3)",
+      "exact_wording": "Where any contract to which this Act applies contains any provision which, upon the true construction of the contract, is intended to have effect in the event of circumstances arising which operate, or would but for that provision operate, to frustrate the contract, or is intended to have effect whether such circumstances arise or not, the court shall give effect to that provision and shall only give effect to section 2 to such extent, if any, as appears to the court to be consistent with that provision.",
+      "summary": "Where the contract makes its own provision for frustrating circumstances, the court gives effect to that provision, and the statutory adjustment in section 2 applies only so far as it is consistent with it.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "the contract contains a provision intended to have effect on the occurrence of frustrating circumstances — typically a force majeure clause",
+        "AND the scope of that clause against the event in question has been considered, since the clause displaces section 2 only so far as it covers the case"
+      ],
+      "target_fields": ["force_majeure"],
+      "trigger_keywords": ["force majeure", "beyond the reasonable control", "act of God", "impossible", "supervening"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/FCA1959",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This is the provision that justifies gating the Frustrated Contracts trigger on the ABSENCE of a force majeure clause. It also shows why finding one is not the end of the analysis: displacement is only to the extent the clause covers the event."
+    },
+    {
+      "id": "sg_fca_s3_5",
+      "category": "statute",
+      "source": "Frustrated Contracts Act 1959 (2020 Rev Ed)",
+      "legacy_citation": "Cap 115 (2014 Rev Ed)",
+      "provision": "Section 3(5)",
+      "exact_wording": "This Act shall not apply — (a) to any charterparty, except a time charterparty or a charterparty by way of demise, or to any contract (other than a charterparty) for the carriage of goods by sea; (b) to any contract of insurance, except as is provided by section 2(6); or (c) to any contract to which section 7 of the Sale of Goods Act 1979 (which avoids contracts for the sale of specific goods which perish before the risk has passed to the buyer) applies, or to any other contract for the sale, or for the sale and delivery, of specific goods, where the contract is frustrated by reason of the fact that the goods have perished.",
+      "summary": "The Act does not apply to most charterparties and sea carriage contracts, to insurance contracts, or to sales of specific goods that have perished.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "the contract's subject matter has been checked against the excluded categories before any other chunk from this Act is allowed to fire"
+      ],
+      "target_fields": ["force_majeure"],
+      "trigger_keywords": ["charterparty", "carriage of goods by sea", "bill of lading", "insurance", "perish", "specific goods"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/FCA1959",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED from lead-in plus (a), (b), (c). This is an exclusion chunk: it exists so the other Frustrated Contracts chunks can be suppressed rather than fired on a shipping or insurance contract."
+    }
+  ]
+}

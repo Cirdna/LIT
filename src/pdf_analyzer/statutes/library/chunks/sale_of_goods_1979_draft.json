@@ -1,0 +1,165 @@
+{
+  "_readme": [
+    "Sale of Goods Act 1979 (2020 Rev Ed), Singapore. PHASE 1 OUTPUT, all unverified_draft.",
+    "These are Role A defaults: they state the position that applies unless the contract",
+    "says otherwise. They are gated to sale_of_goods contracts only — applying them to an",
+    "NDA or a services agreement is the failure mode spec v2.1 §2 exists to prevent."
+  ],
+  "chunks": [
+    {
+      "id": "sg_soga_s12_1",
+      "category": "statute",
+      "source": "Sale of Goods Act 1979 (2020 Rev Ed)",
+      "legacy_citation": "Cap 393 (1999 Rev Ed)",
+      "provision": "Section 12(1)",
+      "exact_wording": "In a contract of sale, other than one to which subsection (3) applies, there is an implied condition on the part of the seller that in the case of a sale he has a right to sell the goods, and in the case of an agreement to sell he will have such a right at the time when the property is to pass.",
+      "summary": "The seller is taken to promise it has the right to sell the goods.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["sale_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract of sale of goods",
+        "AND subsection (3) does not apply (the contract does not show an intention to transfer only such title as the seller may have)"
+      ],
+      "target_fields": ["title_to_goods"],
+      "trigger_keywords": ["title", "right to sell", "ownership"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1979?ProvIds=pr12-,pr13-,pr14-,pr15-",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Note for the reviewer: Unfair Contract Terms Act 1977 s.6(1) prevents this obligation being excluded by any contract term at all, consumer or not. A contract clause purporting to disclaim title is therefore not a valid displacement of this default."
+    },
+    {
+      "id": "sg_soga_s13_1",
+      "category": "statute",
+      "source": "Sale of Goods Act 1979 (2020 Rev Ed)",
+      "legacy_citation": "Cap 393 (1999 Rev Ed)",
+      "provision": "Section 13(1)",
+      "exact_wording": "Where there is a contract for the sale of goods by description, there is an implied condition that the goods will correspond with the description.",
+      "summary": "Where goods are sold by description, they must match that description.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["sale_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract of sale of goods",
+        "AND the sale is by description"
+      ],
+      "target_fields": ["conformity_with_description"],
+      "trigger_keywords": ["description", "specification", "conform"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1979?ProvIds=pr12-,pr13-,pr14-,pr15-",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      }
+    },
+    {
+      "id": "sg_soga_s14_2",
+      "category": "statute",
+      "source": "Sale of Goods Act 1979 (2020 Rev Ed)",
+      "legacy_citation": "Cap 393 (1999 Rev Ed)",
+      "provision": "Section 14(2)",
+      "exact_wording": "Where the seller sells goods in the course of a business, there is an implied condition that the goods supplied under the contract are of satisfactory quality.",
+      "summary": "A business seller is taken to promise the goods are of satisfactory quality.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["sale_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract of sale of goods",
+        "AND the seller sells in the course of a business"
+      ],
+      "target_fields": ["satisfactory_quality"],
+      "trigger_keywords": ["quality", "merchantable", "satisfactory", "defect"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1979?ProvIds=pr12-,pr13-,pr14-,pr15-",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Singapore uses 'satisfactory quality', not the older 'merchantable quality'. A flag or default that says 'merchantable' is citing a superseded formulation."
+    },
+    {
+      "id": "sg_soga_s14_2A",
+      "category": "statute",
+      "source": "Sale of Goods Act 1979 (2020 Rev Ed)",
+      "legacy_citation": "Cap 393 (1999 Rev Ed)",
+      "provision": "Section 14(2A)",
+      "exact_wording": "For the purposes of this Act, goods are of satisfactory quality if they meet the standard that a reasonable person would regard as satisfactory, taking account of any description of the goods, the price (if relevant) and all the other relevant circumstances.",
+      "summary": "Satisfactory quality is measured against what a reasonable person would accept, given the description, the price and the circumstances.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["sale_of_goods"],
+      "applicability_conditions": [
+        "the satisfactory quality condition in section 14(2) is in play"
+      ],
+      "target_fields": ["satisfactory_quality"],
+      "trigger_keywords": ["satisfactory quality", "reasonable person", "standard"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1979?ProvIds=pr12-,pr13-,pr14-,pr15-",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Section 14(2B) then lists aspects of quality (fitness for common purposes, appearance and finish, freedom from minor defects, safety, durability). That list is a separate candidate chunk and has not been drafted here."
+    },
+    {
+      "id": "sg_soga_s14_3",
+      "category": "statute",
+      "source": "Sale of Goods Act 1979 (2020 Rev Ed)",
+      "legacy_citation": "Cap 393 (1999 Rev Ed)",
+      "provision": "Section 14(3)",
+      "exact_wording": "Where the seller sells goods in the course of a business and the buyer, expressly or by implication, makes known — (a) to the seller; or (b) where the purchase price or part of it is payable by instalments and the goods were previously sold by a credit-broker to the seller, to that credit-broker, any particular purpose for which the goods are being bought, there is an implied condition that the goods supplied under the contract are reasonably fit for that purpose, whether or not that is a purpose for which such goods are commonly supplied, except where the circumstances show that the buyer does not rely, or that it is unreasonable for him to rely, on the skill or judgment of the seller or credit-broker.",
+      "summary": "Where the buyer makes a particular purpose known, the goods must be reasonably fit for it — unless the buyer did not rely, or it was unreasonable to rely, on the seller's skill or judgment.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["sale_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract of sale of goods",
+        "AND the seller sells in the course of a business",
+        "AND the buyer made a particular purpose known, expressly or by implication"
+      ],
+      "target_fields": ["fitness_for_purpose"],
+      "trigger_keywords": ["fitness", "purpose", "suitable", "intended use"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1979?ProvIds=pr12-,pr13-,pr14-,pr15-",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED from four separate rows on the retrieved page (lead-in, (a), (b), and the trailing text). This is a long single sentence and the reassembly order was inferred. Verify against the PDF rather than the HTML view."
+    },
+    {
+      "id": "sg_soga_s15_2",
+      "category": "statute",
+      "source": "Sale of Goods Act 1979 (2020 Rev Ed)",
+      "legacy_citation": "Cap 393 (1999 Rev Ed)",
+      "provision": "Section 15(2)",
+      "exact_wording": "In the case of a contract for sale by sample, there is an implied condition — (a) that the bulk will correspond with the sample in quality; (b) that the goods will be free from any defect, making their quality unsatisfactory, which would not be apparent on reasonable examination of the sample.",
+      "summary": "On a sale by sample, the bulk must match the sample in quality and be free of defects that a reasonable examination of the sample would not reveal.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["sale_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract of sale of goods",
+        "AND it is a sale by sample (there is an express or implied term to that effect, section 15(1))"
+      ],
+      "target_fields": ["sale_by_sample"],
+      "trigger_keywords": ["sample", "specimen", "bulk"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1979?ProvIds=pr12-,pr13-,pr14-,pr15-",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED from lead-in plus paragraphs (a) and (b). Note the Singapore version has two paragraphs here; the older UK formulation had three (it included a 'reasonable opportunity of comparing' limb, which appears in the Supply of Goods Act 1982 s.5(2)(b) but not here). Check carefully."
+    }
+  ]
+}

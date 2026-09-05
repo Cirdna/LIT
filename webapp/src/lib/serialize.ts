@@ -11,6 +11,8 @@ import type {
   ExtractedField,
   HandoffBrief,
   Job,
+  StatuteFlag,
+  StatutoryDefault,
 } from "@prisma/client";
 import type { AbsenceReason, ClaimType, ConfidenceTier } from "./domain.js";
 
@@ -52,6 +54,75 @@ export function serializeField(f: ExtractedField): FieldDTO {
     consistencyScore: f.consistencyScore,
     vlmAgreement: f.vlmAgreement,
     modelVersion: f.modelVersion,
+  };
+}
+
+// The statute layer. Deliberately NOT shaped like FieldDTO: a statutory default
+// carries no confidenceTier because it was never read off a page, and pretending
+// otherwise would let it borrow an extraction's badge in the UI.
+export type StatutoryDefaultDTO = {
+  id: string;
+  fieldName: string;
+  statute: string;
+  citation: string;
+  jurisdiction: string;
+  effect: string;
+  appliesWhen: string;
+  autoDisplacementSupported: boolean;
+  isDisplaced: boolean;
+  displacedByClause: string | null;
+  displacedByPage: number | null;
+};
+
+export function serializeStatutoryDefault(d: StatutoryDefault): StatutoryDefaultDTO {
+  return {
+    id: d.id,
+    fieldName: d.fieldName,
+    statute: d.statute,
+    citation: d.citation,
+    jurisdiction: d.jurisdiction,
+    effect: d.effect,
+    appliesWhen: d.appliesWhen,
+    autoDisplacementSupported: d.autoDisplacementSupported,
+    isDisplaced: d.isDisplaced,
+    displacedByClause: d.displacedByClause,
+    displacedByPage: d.displacedByPage,
+  };
+}
+
+export type StatuteFlagDTO = {
+  id: string;
+  statute: string;
+  citation: string;
+  jurisdiction: string;
+  cuadCategory: string;
+  fieldKey: string | null;
+  trigger: string;
+  reviewRequired: string;
+  factors: string[];
+  excerpt: string;
+  sourceClause: string | null;
+  sourcePage: number | null;
+  reasonablenessTestApplies: boolean | null;
+  requiresHumanReview: boolean;
+};
+
+export function serializeStatuteFlag(f: StatuteFlag): StatuteFlagDTO {
+  return {
+    id: f.id,
+    statute: f.statute,
+    citation: f.citation,
+    jurisdiction: f.jurisdiction,
+    cuadCategory: f.cuadCategory,
+    fieldKey: f.fieldKey,
+    trigger: f.trigger,
+    reviewRequired: f.reviewRequired,
+    factors: f.factors,
+    excerpt: f.excerpt,
+    sourceClause: f.sourceClause,
+    sourcePage: f.sourcePage,
+    reasonablenessTestApplies: f.reasonablenessTestApplies,
+    requiresHumanReview: f.requiresHumanReview,
   };
 }
 

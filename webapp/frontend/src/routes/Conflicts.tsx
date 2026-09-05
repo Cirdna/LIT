@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, type ConflictDTO, type DocumentSummary, type FieldDTO } from "../lib/api";
-import { ConfidenceBadge } from "../lib/confidence";
+import { ConfidenceBadge, labelForField, labelForTier } from "../lib/confidence";
+import { formatDateValue, formatDatesInText } from "../lib/format";
 import { EmptyState, ErrorState, Skeleton } from "../components/ui";
 
 const SEVERITY: Record<string, string> = {
@@ -55,14 +56,14 @@ function ConflictCard({ conflict }: { conflict: ConflictDTO }) {
           <span className={`rounded border px-2 py-0.5 text-sm font-medium ${SEVERITY[conflict.severity] ?? SEVERITY.low}`}>
             {conflict.severity} severity
           </span>
-          <ConfidenceBadge tier={conflict.confidenceTier} size="sm" />
+          <ConfidenceBadge label={labelForTier(conflict.confidenceTier)} size="sm" />
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => create.mutate()} disabled={create.isPending}>
           {create.isPending ? "Preparing…" : "Create handoff brief"}
         </button>
       </div>
 
-      <p className="px-4 py-3 text-ink">{conflict.summary}</p>
+      <p className="px-4 py-3 text-ink">{formatDatesInText(conflict.summary)}</p>
 
       <div className="grid gap-px bg-rule md:grid-cols-2">
         {conflict.fields.slice(0, 2).map((f) => (
@@ -79,10 +80,10 @@ function ClauseSide({ field, doc }: { field: FieldDTO; doc?: DocumentSummary }) 
       <div className="mb-1 text-sm font-medium text-navy">{doc?.filename ?? "Document"}</div>
       <div className="mb-2 flex items-center gap-2 text-sm text-muted">
         <span>{field.clauseLabel ?? "Clause not identified"}</span>
-        <ConfidenceBadge tier={field.confidenceTier} size="sm" />
+        <ConfidenceBadge label={labelForField(field)} size="sm" />
       </div>
       <blockquote className="border-l-4 border-rule pl-3 text-ink">
-        “{field.valueVerbatim ?? "—"}”
+        “{field.valueVerbatim ? formatDateValue(field.valueVerbatim) : "—"}”
       </blockquote>
     </div>
   );

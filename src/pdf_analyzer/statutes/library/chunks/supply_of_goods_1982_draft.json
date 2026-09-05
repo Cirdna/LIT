@@ -1,0 +1,257 @@
+{
+  "_readme": [
+    "Supply of Goods Act 1982 (2020 Rev Ed), Singapore. PHASE 1 OUTPUT, all unverified_draft.",
+    "",
+    "TWO SCOPE CORRECTIONS TO THE BRIEF, both load-bearing:",
+    "1. This Act does NOT cover services. It covers contracts for the TRANSFER OF PROPERTY",
+    "   IN GOODS and contracts for the HIRE OF GOODS. Singapore did not adopt the UK's",
+    "   services provisions, so there is no statutory implied term of reasonable care and",
+    "   skill for a pure services contract here — that is common law. Nothing in this file",
+    "   is eligible to fire on a services agreement.",
+    "2. This Act does NOT cover hire-purchase. Section 1(2)(b) makes a hire-purchase",
+    "   agreement an 'excepted contract', and section 6(1) excludes it from 'contract for",
+    "   the hire of goods'. Hire-purchase is governed by the Hire-Purchase Act 1969.",
+    "",
+    "These corrections also fix a live defect: statutes/supply_of_goods.py currently cites",
+    "s.3/s.4/s.5/s.6 for the transfer set. The correct sections are s.2/s.3/s.4/s.5 — every",
+    "transfer citation in that module is one section too high, and s.6 is in fact the",
+    "definition of 'contract for the hire of goods'. See PHASE2_VERIFICATION.md."
+  ],
+  "chunks": [
+    {
+      "id": "sg_sga1982_s1_1",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 1(1)",
+      "exact_wording": "In this Act, “contract for the transfer of goods” means a contract under which one person transfers or agrees to transfer to another the property in goods, other than an excepted contract.",
+      "summary": "Defines the contracts this Act's transfer provisions reach: transfers of property in goods that are not sales, hire-purchase, deeds without consideration, or security arrangements.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods"],
+      "applicability_conditions": [
+        "the contract transfers or agrees to transfer property in goods",
+        "AND it is not an excepted contract under section 1(2): a contract of sale of goods, a hire-purchase agreement, a transfer by deed without consideration, or a contract operating by way of mortgage, pledge, charge or other security"
+      ],
+      "target_fields": [],
+      "trigger_keywords": ["transfer", "supply of goods", "work and materials"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This chunk exists to make the classification gate defensible rather than to produce a default, so target_fields is empty. Section 1(3) adds that a contract is still a transfer contract whether or not services are also provided under it — which is how a work-and-materials contract falls in, and is NOT the same as the Act covering services."
+    },
+    {
+      "id": "sg_sga1982_s2_1",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 2(1)",
+      "exact_wording": "In a contract for the transfer of goods, other than one to which subsection (3) applies, there is an implied condition on the part of the transferor that in the case of a transfer of the property in the goods he has a right to transfer the property and in the case of an agreement to transfer the property in the goods he will have such a right at the time when the property is to be transferred.",
+      "summary": "The transferor is taken to promise it has the right to transfer the property in the goods.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract for the transfer of goods within section 1(1)",
+        "AND subsection (3) does not apply (no intention to transfer only such title as the transferor may have)"
+      ],
+      "target_fields": ["title_to_goods"],
+      "trigger_keywords": ["title", "right to transfer", "ownership"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "CORRECTS statutes/supply_of_goods.py, which cites this as s.3."
+    },
+    {
+      "id": "sg_sga1982_s3_2",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 3(2)",
+      "exact_wording": "In such a case, there is an implied condition that the goods will correspond with the description.",
+      "summary": "Where goods are transferred by description, they must match that description.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract for the transfer of goods",
+        "AND the transferor transfers or agrees to transfer the property in the goods by description (section 3(1))"
+      ],
+      "target_fields": ["conformity_with_description"],
+      "trigger_keywords": ["description", "specification", "conform"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "CORRECTS statutes/supply_of_goods.py, which cites this as s.4. The wording opens with 'In such a case' because it depends on s.3(1); quoting it alone is unhelpful without that context, so the summary carries the condition."
+    },
+    {
+      "id": "sg_sga1982_s4_2",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 4(2)",
+      "exact_wording": "Where, under such a contract, the transferor transfers the property in goods in the course of a business, there is an implied condition that the goods supplied under the contract are of satisfactory quality.",
+      "summary": "A business transferor is taken to promise the goods are of satisfactory quality.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract for the transfer of goods",
+        "AND the transferor acts in the course of a business"
+      ],
+      "target_fields": ["satisfactory_quality"],
+      "trigger_keywords": ["quality", "satisfactory", "defect"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "CORRECTS statutes/supply_of_goods.py, which cites quality and fitness together as s.5. Satisfactory quality is s.4(2); fitness for purpose is s.4(5)."
+    },
+    {
+      "id": "sg_sga1982_s4_5",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 4(5)",
+      "exact_wording": "In that case there is, subject to subsection (6), an implied condition that the goods supplied under the contract are reasonably fit for that purpose, whether or not that is a purpose for which such goods are commonly supplied.",
+      "summary": "Where a particular purpose was made known, the goods must be reasonably fit for it — unless the transferee did not rely, or it was unreasonable to rely, on the transferor's skill or judgment.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract for the transfer of goods",
+        "AND the transferor acts in the course of a business",
+        "AND the transferee made a particular purpose known, expressly or by implication (section 4(4))",
+        "AND section 4(6) does not apply (the circumstances do not show absence or unreasonableness of reliance)"
+      ],
+      "target_fields": ["fitness_for_purpose"],
+      "trigger_keywords": ["fitness", "purpose", "suitable", "intended use"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "The quoted subsection opens 'In that case' and is meaningless without s.4(4). The reliance carve-out lives in s.4(6), which is stated in applicability_conditions rather than being silently folded into the quotation."
+    },
+    {
+      "id": "sg_sga1982_s5_2",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 5(2)",
+      "exact_wording": "In such a case, there is an implied condition — (a) that the bulk will correspond with the sample in quality; (b) that the transferee will have a reasonable opportunity of comparing the bulk with the sample; and (c) that the goods will be free from any defect, making their quality unsatisfactory, which would not be apparent on reasonable examination of the sample.",
+      "summary": "On a transfer by sample, the bulk must match the sample, the transferee must get a reasonable chance to compare them, and hidden quality defects are covered.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract for the transfer of goods",
+        "AND the transfer is by reference to a sample (section 5(1))"
+      ],
+      "target_fields": ["sale_by_sample"],
+      "trigger_keywords": ["sample", "specimen", "bulk"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED from lead-in plus (a), (b), (c). CORRECTS statutes/supply_of_goods.py, which cites this as s.6. Unlike Sale of Goods Act s.15(2), this provision HAS a 'reasonable opportunity of comparing' limb — three paragraphs, not two."
+    },
+    {
+      "id": "sg_sga1982_s7_1",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 7(1)",
+      "exact_wording": "In a contract for the hire of goods, there is an implied condition on the part of the bailor that in the case of a bailment he has a right to transfer possession of the goods by way of hire for the period of the bailment and in the case of an agreement to bail he will have such a right at the time of the bailment.",
+      "summary": "On a hire of goods, the owner is taken to promise it has the right to give possession for the hire period.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["hire_of_goods"],
+      "applicability_conditions": [
+        "the contract bails or agrees to bail goods by way of hire (section 6(1))",
+        "AND it is not a hire-purchase agreement, which section 6(1) excludes"
+      ],
+      "target_fields": ["title_to_goods"],
+      "trigger_keywords": ["hire", "bailment", "possession", "rental"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "The hire-set citations in statutes/supply_of_goods.py (s.7 to s.10) are correct; only the transfer set is off by one."
+    },
+    {
+      "id": "sg_sga1982_s9_2",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 9(2)",
+      "exact_wording": "Where, under such a contract, the bailor bails goods in the course of a business, there is an implied condition that the goods supplied under the contract are of satisfactory quality.",
+      "summary": "A business owner hiring goods out is taken to promise they are of satisfactory quality.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["hire_of_goods"],
+      "applicability_conditions": [
+        "the contract is a contract for the hire of goods",
+        "AND the bailor bails in the course of a business"
+      ],
+      "target_fields": ["satisfactory_quality"],
+      "trigger_keywords": ["quality", "satisfactory", "defect", "hire"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      }
+    },
+    {
+      "id": "sg_sga1982_s11_1",
+      "category": "statute",
+      "source": "Supply of Goods Act 1982 (2020 Rev Ed)",
+      "legacy_citation": "Cap 394 (1999 Rev Ed)",
+      "provision": "Section 11(1)",
+      "exact_wording": "Where a right, duty or liability would arise under a contract for the transfer of goods or a contract for the hire of goods by implication of law, it may (subject to subsection (2) and the Unfair Contract Terms Act 1977) be negatived or varied by express agreement, or by the course of dealing between the parties, or by such usage as binds both parties to the contract.",
+      "summary": "These implied terms can be displaced by express agreement or course of dealing — but only within the limits the Unfair Contract Terms Act allows.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["transfer_of_goods", "hire_of_goods"],
+      "applicability_conditions": [
+        "a term implied by this Act is in play",
+        "AND the contract contains an express provision, course of dealing or usage said to displace it"
+      ],
+      "target_fields": ["cap_carve_outs"],
+      "trigger_keywords": ["exclude", "negative", "vary", "notwithstanding", "entire agreement"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/SGA1982",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This is the provision that authorises the 'displaced by clause' logic in Role A. It also sets its limit: displacement is subject to UCTA, so finding an exclusion clause is not the end of the analysis."
+    }
+  ]
+}

@@ -1,0 +1,244 @@
+{
+  "_readme": [
+    "Unfair Contract Terms Act 1977 (2020 Rev Ed), Singapore. PHASE 1 OUTPUT.",
+    "Every chunk is unverified_draft. Wording was transcribed from the official SSO",
+    "page listed in each chunk's provenance, NOT recalled. Phase 2 must still check",
+    "each exact_wording character-for-character before anything is quoted to a user.",
+    "GAP: the Second Schedule (reasonableness guidelines) is NOT in this file. It was",
+    "not present in the retrieved page body and no wording for it has been invented.",
+    "It must be fetched and drafted separately — see PHASE2_VERIFICATION.md."
+  ],
+  "chunks": [
+    {
+      "id": "sg_ucta_s2_1",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 2(1)",
+      "exact_wording": "A person cannot by reference to any contract term or to a notice given to persons generally or to particular persons exclude or restrict his liability for death or personal injury resulting from negligence.",
+      "summary": "Liability for death or personal injury caused by negligence cannot be excluded or restricted at all. There is no reasonableness escape from this one.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "employment", "other_commercial"],
+      "applicability_conditions": [
+        "the clause purports to exclude or restrict liability for negligence",
+        "AND the excluded liability extends to death or personal injury (whether by express words or by an unqualified cap that would catch it)",
+        "AND the liability is business liability within section 1(3)"
+      ],
+      "target_fields": ["liability_cap", "cap_carve_outs", "indemnities"],
+      "trigger_keywords": ["negligence", "death", "personal injury", "exclude", "restrict", "liability"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      }
+    },
+    {
+      "id": "sg_ucta_s2_2",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 2(2)",
+      "exact_wording": "In the case of other loss or damage, a person cannot so exclude or restrict his liability for negligence except in so far as the term or notice satisfies the requirement of reasonableness.",
+      "summary": "For loss other than death or personal injury, negligence liability can only be excluded or restricted so far as the term is reasonable.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "employment", "other_commercial"],
+      "applicability_conditions": [
+        "the clause purports to exclude or restrict liability for NEGLIGENCE specifically, as defined in section 1(1) — a cap on contractual liability generally is not automatically within s.2(2)",
+        "AND the liability is business liability within section 1(3)"
+      ],
+      "target_fields": ["liability_cap", "cap_carve_outs", "indemnities"],
+      "trigger_keywords": ["negligence", "exclude", "restrict", "liability"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Section 1(3) limits sections 2 to 7 to business liability. The applicability predicate must check that, not just the presence of a cap."
+    },
+    {
+      "id": "sg_ucta_s3_1",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 3(1)",
+      "exact_wording": "This section applies as between contracting parties where one of them deals as consumer or on the other’s written standard terms of business.",
+      "summary": "The controls in section 3 only bite where one party dealt as a consumer or on the other side's written standard terms. A freely negotiated business contract is outside it.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "employment", "other_commercial"],
+      "applicability_conditions": [
+        "one party dealt as consumer (see section 12) OR on the other party's written standard terms of business",
+        "AND this is established from the document or told to the tool — it must not be assumed from the fact that a contract looks like a template"
+      ],
+      "target_fields": ["liability_cap", "cap_carve_outs", "termination_for_convenience"],
+      "trigger_keywords": ["standard terms", "standard conditions", "consumer", "our terms"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This is the gating provision for the 'standard terms' element of the v2.1 §3 predicate. The tool cannot currently determine standard-terms dealing, so any chunk depending on it must abstain rather than assume."
+    },
+    {
+      "id": "sg_ucta_s6_3",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 6(3)",
+      "exact_wording": "As against a person dealing otherwise than as consumer, the liability specified in subsection (2) can be excluded or restricted by reference to a contract term, but only in so far as the term satisfies the requirement of reasonableness.",
+      "summary": "In a business-to-business sale, the implied terms about description, quality, fitness and sample can be excluded only so far as reasonable.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "hire_purchase"],
+      "applicability_conditions": [
+        "the contract is a contract of sale of goods or a hire-purchase agreement",
+        "AND the buyer does NOT deal as consumer (if they do, section 6(2) applies instead and exclusion is not possible at all)",
+        "AND the clause purports to exclude or restrict the obligations arising from sections 13, 14 or 15 of the Sale of Goods Act 1979"
+      ],
+      "target_fields": ["cap_carve_outs", "liability_cap"],
+      "trigger_keywords": ["implied", "warranty", "merchantable", "satisfactory quality", "fitness for purpose", "exclude", "disclaim"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Section 6(1) makes exclusion of the Sale of Goods Act s.12 title obligation impossible against anyone, consumer or not. That is a separate chunk-worthy rule not yet drafted."
+    },
+    {
+      "id": "sg_ucta_s7_3",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 7(3)",
+      "exact_wording": "As against a person dealing otherwise than as consumer, that liability can be excluded or restricted by reference to such a term, but only in so far as the term satisfies the requirement of reasonableness.",
+      "summary": "For contracts under which goods pass that are not sales or hire-purchase (hire, work and materials), exclusion of the implied quality and description obligations is subject to reasonableness in a business contract.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["transfer_of_goods", "hire_of_goods", "lease"],
+      "applicability_conditions": [
+        "possession or ownership of goods passes under a contract NOT governed by the law of sale of goods or hire-purchase (section 7(1))",
+        "AND the other party does not deal as consumer",
+        "AND the clause excludes or restricts liability for the obligations implied by law from the nature of the contract"
+      ],
+      "target_fields": ["cap_carve_outs", "liability_cap"],
+      "trigger_keywords": ["hire", "bailment", "implied", "exclude", "quality", "description"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      }
+    },
+    {
+      "id": "sg_ucta_s11_1",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 11(1)",
+      "exact_wording": "In relation to a contract term, the requirement of reasonableness for the purposes of this Part and section 3 of the Misrepresentation Act 1967 is that the term shall have been a fair and reasonable one to be included having regard to the circumstances which were, or ought reasonably to have been, known to or in the contemplation of the parties when the contract was made.",
+      "summary": "The reasonableness test: was the term fair and reasonable to include, judged by what the parties knew or should have known when the contract was made — not by what happened afterwards.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "employment", "other_commercial"],
+      "applicability_conditions": [
+        "another provision of the Act (or Misrepresentation Act section 3) has already made the term's effect depend on reasonableness — section 11(1) supplies the test, it does not itself create a control"
+      ],
+      "target_fields": ["liability_cap", "cap_carve_outs", "indemnities"],
+      "trigger_keywords": ["reasonable", "reasonableness"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This provision is the reason the shared reasonableness gate is shared: it expressly serves both this Part and Misrepresentation Act 1967 section 3."
+    },
+    {
+      "id": "sg_ucta_s11_2",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 11(2)",
+      "exact_wording": "In determining for the purposes of section 6 or 7 whether a contract term satisfies the requirement of reasonableness, regard shall be had in particular to the matters specified in the Second Schedule; but this subsection does not prevent the court or arbitrator from holding, in accordance with any rule of law, that a term which purports to exclude or restrict any relevant liability is not a term of the contract.",
+      "summary": "The Second Schedule guidelines are directed at sections 6 and 7 — the goods provisions. They are not, on the face of the Act, the test for section 2(2).",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "hire_purchase", "lease"],
+      "applicability_conditions": [
+        "the reasonableness question arises under section 6 or section 7 specifically"
+      ],
+      "target_fields": ["cap_carve_outs", "liability_cap"],
+      "trigger_keywords": ["reasonable", "reasonableness", "implied", "exclude"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "IMPORTANT SCOPE POINT for the reasonableness gate. The Act confines the Second Schedule to sections 6 and 7. Courts commonly treat the guidelines as helpful by analogy elsewhere, but presenting them as the statutory test for a s.2(2) negligence exclusion overstates the Act. Any flag that recites Second Schedule factors against a s.2(2) trigger should say it is doing so by analogy."
+    },
+    {
+      "id": "sg_ucta_s11_4",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 11(4)",
+      "exact_wording": "Where by reference to a contract term or notice a person seeks to restrict liability to a specified sum of money, and the question arises (under this or any other Act) whether the term or notice satisfies the requirement of reasonableness, regard shall be had in particular (but without prejudice to subsection (2) in the case of contract terms) to — (a) the resources which he could expect to be available to him for the purpose of meeting the liability should it arise; and (b) how far it was open to him to cover himself by insurance.",
+      "summary": "Where liability is capped at a stated sum, reasonableness looks in particular at the resources available to meet the liability and how far insurance was available.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "other_commercial"],
+      "applicability_conditions": [
+        "the clause restricts liability to a SPECIFIED SUM of money (a monetary cap), not merely excludes a head of loss",
+        "AND a reasonableness question has already been raised by another provision"
+      ],
+      "target_fields": ["liability_cap"],
+      "trigger_keywords": ["shall not exceed", "capped at", "aggregate liability", "limited to", "maximum liability"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED. On the retrieved page the lead-in and paragraphs (a) and (b) appear as separate table rows and had to be reassembled into one sentence. Punctuation and the dash before (a) are the most likely points of divergence — check this one against the PDF, not the HTML view. This is the single most directly useful provision for reviewing a monetary liability cap, so it is worth verifying first."
+    },
+    {
+      "id": "sg_ucta_s11_5",
+      "category": "statute",
+      "source": "Unfair Contract Terms Act 1977 (2020 Rev Ed)",
+      "legacy_citation": "Cap 396 (1994 Rev Ed)",
+      "provision": "Section 11(5)",
+      "exact_wording": "It is for those claiming that a contract term or notice satisfies the requirement of reasonableness to show that it does.",
+      "summary": "The party relying on the exclusion has to prove it was reasonable. The burden is not on the party challenging it.",
+      "role_type": "role_b_validator",
+      "applicable_contract_types": ["sale_of_goods", "transfer_of_goods", "hire_of_goods", "services", "lease", "distribution", "employment", "other_commercial"],
+      "applicability_conditions": [
+        "a reasonableness question has already been raised by another provision of the Act or by Misrepresentation Act section 3"
+      ],
+      "target_fields": ["liability_cap", "cap_carve_outs"],
+      "trigger_keywords": ["reasonable", "reasonableness"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/UCTA1977",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      }
+    }
+  ]
+}

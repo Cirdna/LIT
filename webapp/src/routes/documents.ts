@@ -19,6 +19,8 @@ import {
   serializePage,
   serializeSegment,
   serializeJobStatus,
+  serializeStatuteFlag,
+  serializeStatutoryDefault,
 } from "../lib/serialize.js";
 
 // Opaque offset cursor. Keeps clients from depending on the encoding.
@@ -228,6 +230,8 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         fields: { orderBy: { fieldKey: "asc" } },
         segments: { orderBy: { charStart: "asc" } },
         jobs: { orderBy: { createdAt: "desc" }, take: 1 },
+        statutoryDefaults: { orderBy: [{ isDisplaced: "asc" }, { fieldName: "asc" }] },
+        statuteFlags: { orderBy: [{ citation: "asc" }, { flagId: "asc" }] },
       },
     });
     if (!doc) throw notFound("Document not found.");
@@ -251,6 +255,10 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         citationPage: f.anchorLineIds.map((id) => pageByLine.get(id)).find((p) => p != null) ?? null,
       })),
       segments: doc.segments.map(serializeSegment),
+      // Supplied by statute rather than read from the contract, so kept in
+      // separate keys the UI must badge differently (see §Statute layer).
+      statutoryDefaults: doc.statutoryDefaults.map(serializeStatutoryDefault),
+      statuteFlags: doc.statuteFlags.map(serializeStatuteFlag),
       job: serializeJobStatus(doc.jobs[0] ?? null),
     };
   });

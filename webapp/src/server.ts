@@ -12,6 +12,9 @@ import { registerConflictRoutes } from "./routes/conflicts.js";
 import { registerHandoffRoutes } from "./routes/handoffs.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerChatRoutes } from "./routes/chat.js";
+import { registerBenchmarkRoutes } from "./routes/benchmark.js";
+import { registerInvoiceRoutes } from "./routes/invoices.js";
 
 async function build() {
   const app = Fastify({ logger: { level: "info" }, bodyLimit: config.upload.maxFileBytes });
@@ -55,6 +58,9 @@ async function build() {
   await registerConflictRoutes(app);
   await registerHandoffRoutes(app);
   await registerPortfolioRoutes(app);
+  await registerChatRoutes(app);
+  await registerBenchmarkRoutes(app);
+  await registerInvoiceRoutes(app);
 
   return app;
 }

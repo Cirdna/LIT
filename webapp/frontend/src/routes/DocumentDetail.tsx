@@ -3,9 +3,20 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type AnchorDTO, type FieldDTO } from "../lib/api";
 import { DOC_TYPE_LABELS, FIELD_GROUPS } from "../lib/domain";
-import { ocrBand } from "../lib/confidence";
+import {
+  ConfidenceBadge,
+  LABEL_META,
+  LABEL_ORDER,
+  labelForField,
+  ocrBand,
+  type DisplayLabel,
+} from "../lib/confidence";
+import { BenchmarkLine } from "../components/BenchmarkLine";
 import { FieldValue } from "../components/FieldValue";
+import { InvoiceMatch } from "../components/InvoiceMatch";
 import { PageViewer } from "../components/PageViewer";
+import { StatuteFlagNote } from "../components/StatuteFlagNote";
+import { StatutePanel } from "../components/StatutePanel";
 import { ErrorState, Skeleton, StatusPill } from "../components/ui";
 
 const PROCESSING = new Set(["queued", "processing"]);
@@ -19,6 +30,9 @@ export default function DocumentDetail() {
   const [currentPage, setCurrentPage] = useState(1);
   const [highlights, setHighlights] = useState<AnchorDTO[]>([]);
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
+  // All three labels visible by default: hiding anything by default would quietly
+  // shrink what the reader thinks the contract says.
+  const [shown, setShown] = useState<DisplayLabel[]>([...LABEL_ORDER]);
 
   const detail = useQuery({
     queryKey: ["document", id],
@@ -41,6 +55,31 @@ export default function DocumentDetail() {
 
   const isProcessing = PROCESSING.has(doc.status);
   const notContract = doc.docType === "not_a_contract";
+
+  // A field key with no row reads as NA — same as an empty value. The filter and
+  // the counts must agree with what the rows themselves are badged, so both go
+  // through labelForField / the NA default.
+  const labelsForKey = (key: string): DisplayLabel[] => {
+    const matches = doc.fields.filter((f) => f.fieldKey === key);
+    return matches.length === 0 ? ["na"] : matches.map(labelForField);
+  };
+  const counts = LABEL_ORDER.reduce(
+    (acc, l) => ({ ...acc, [l]: 0 }),
+    {} as Record<DisplayLabel, number>,
+  );
+  for (const group of FIELD_GROUPS)
+    for (const def of group.fields) for (const l of labelsForKey(def.key)) counts[l] += 1;
+
+  const isShown = (l: DisplayLabel) => shown.includes(l);
+  const toggle = (l: DisplayLabel) =>
+    setShown((prev) => (prev.includes(l) ? prev.filter((x) => x !== l) : [...prev, l]));
+
+  // Role B flags hang off the field whose clause triggered them. A flag whose
+  // CUAD category has no field key in this UI's vocabulary would otherwise
+  // vanish, so those are collected and shown in their own section below.
+  const flagsFor = (key: string) => doc.statuteFlags.filter((f) => f.fieldKey === key);
+  const shownFieldKeys = new Set(FIELD_GROUPS.flatMap((g) => g.fields.map((f) => f.key)));
+  const unattachedFlags = doc.statuteFlags.filter((f) => f.fieldKey == null || !shownFieldKeys.has(f.fieldKey));
 
   // Source-quality header (§9): make must-have #1 demonstrable.
   const ocrMeans = doc.pages.map((p) => p.ocrConfMean).filter((x): x is number => x != null);
@@ -123,6 +162,14 @@ export default function DocumentDetail() {
             <p className="mt-2 text-sm text-muted">
               You can still read the pages on the right. If this really is a contract, re-upload a clearer copy.
             </p>
+
+            {/* An invoice is not analysed as a contract, but it can still be asked
+                the one question that matters about it: is there a contract behind
+                it? Kept inside the "not analysed" panel so it never reads as
+                contract extraction. */}
+            <div className="mt-5 border-t border-warn/30 pt-4">
+              <InvoiceMatch documentId={id} />
+            </div>
           </div>
           <div ref={viewerRef}>
             <PageViewer documentId={id} pages={doc.pages} currentPage={currentPage} onPageChange={setCurrentPage} highlights={[]} />
@@ -130,36 +177,118 @@ export default function DocumentDetail() {
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* Left: the seven field groups, always all shown. */}
+          {/* Left: the seven field groups, always all shown unless filtered. */}
           <div className="space-y-5">
-            {FIELD_GROUPS.map((group) => (
-              <section key={group.key} className="panel p-4">
-                <h2 className="mb-3 text-base font-semibold text-ink">{group.title}</h2>
-                <div className="space-y-2">
-                  {group.fields.map((def) => {
-                    const matches = doc.fields.filter((f) => f.fieldKey === def.key);
-                    if (matches.length === 0) {
-                      return (
-                        <div key={def.key} className="rounded-r border-l-4 border-l-rule bg-surface px-3 py-2.5">
-                          <span className="text-sm font-medium text-muted">{def.label}</span>
-                          <p className="text-muted">Not extracted.</p>
-                        </div>
-                      );
-                    }
-                    return matches.map((field) => (
-                      <FieldValue
-                        key={field.id}
-                        label={def.label}
-                        field={field}
-                        page={field.citationPage ?? null}
-                        active={activeFieldId === field.id}
-                        onCite={cite}
-                      />
-                    ));
-                  })}
+            <div className="panel flex flex-wrap items-center gap-2 px-4 py-3">
+              <span className="text-sm font-medium text-muted">Show</span>
+              {LABEL_ORDER.map((l) => {
+                const m = LABEL_META[l];
+                const on = isShown(l);
+                return (
+                  <button
+                    key={l}
+                    onClick={() => toggle(l)}
+                    aria-pressed={on}
+                    title={m.label}
+                    className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-sm font-medium transition-colors ${
+                      on ? `${m.border} ${m.bg} ${m.text}` : "border-rule bg-surface text-faint line-through"
+                    }`}
+                  >
+                    <span aria-hidden className="grid h-4 w-4 place-items-center rounded-sm border border-current font-bold leading-none">
+                      {m.glyph}
+                    </span>
+                    {m.short}
+                    <span className="tnum font-normal">({counts[l]})</span>
+                  </button>
+                );
+              })}
+              {shown.length === 0 && <span className="text-sm text-warn">Everything is hidden.</span>}
+            </div>
+
+            {FIELD_GROUPS.map((group) => {
+              const visibleDefs = group.fields.filter((def) =>
+                labelsForKey(def.key).some(isShown),
+              );
+              return (
+                <section key={group.key} className="panel p-4">
+                  <h2 className="mb-3 text-base font-semibold text-ink">{group.title}</h2>
+                  {visibleDefs.length === 0 ? (
+                    <p className="text-sm text-faint">
+                      {group.fields.length} field{group.fields.length === 1 ? "" : "s"} hidden by the filter.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {visibleDefs.map((def) => {
+                        const matches = doc.fields.filter((f) => f.fieldKey === def.key);
+                        // Additive: the flag sits below the value, and the value
+                        // keeps its own badge and wording either way.
+                        const notes = flagsFor(def.key).map((f) => (
+                          <StatuteFlagNote key={f.id} flag={f} />
+                        ));
+                        if (matches.length === 0) {
+                          return (
+                            <div key={def.key} className="space-y-2">
+                              <div className={`rounded-r ${LABEL_META.na.barBorder} bg-surface px-3 py-2.5`}>
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className="text-sm font-medium text-muted">{def.label}</span>
+                                  <ConfidenceBadge label="na" size="sm" />
+                                </div>
+                                <p className="text-muted">Not extracted.</p>
+                              </div>
+                              {notes}
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={def.key} className="space-y-2">
+                            {matches
+                              .filter((field) => isShown(labelForField(field)))
+                              .map((field) => (
+                                <div key={field.id}>
+                                  <FieldValue
+                                    label={def.label}
+                                    field={field}
+                                    page={field.citationPage ?? null}
+                                    active={activeFieldId === field.id}
+                                    onCite={cite}
+                                  />
+                                  {/* Additive, like the statute notes: the field keeps
+                                      its own value and badge, and the comparison to the
+                                      portfolio sits underneath it. Renders nothing
+                                      unless there is a real average to compare against. */}
+                                  {field.valueVerbatim && (
+                                    <BenchmarkLine fieldKey={def.key} documentId={id} />
+                                  )}
+                                </div>
+                              ))}
+                            {notes}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+
+            {/* Not filtered by the three-label control: these are not extractions,
+                so "Quoted / Inferred / NA" has no bearing on them. */}
+            <StatutePanel defaults={doc.statutoryDefaults} />
+
+            {unattachedFlags.length > 0 && (
+              <section className="panel border-navy/30 p-4">
+                <h2 className="text-base font-semibold text-ink">Other clauses a statute touches</h2>
+                <p className="mt-1 text-sm text-muted">
+                  These clauses engage legislation but do not correspond to any field above, so they are listed on their
+                  own rather than dropped.
+                </p>
+                <div className="mt-3 space-y-2">
+                  {unattachedFlags.map((f) => (
+                    <StatuteFlagNote key={f.id} flag={f} />
+                  ))}
                 </div>
               </section>
-            ))}
+            )}
           </div>
 
           {/* Right: page image + overlay, sticky so citations stay in view. */}

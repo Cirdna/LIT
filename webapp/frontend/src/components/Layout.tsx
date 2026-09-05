@@ -25,6 +25,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/conflicts" className={navClass}>
               Conflicts
             </NavLink>
+            <NavLink to="/ask" className={navClass}>
+              Ask
+            </NavLink>
           </nav>
           <div className="ml-auto">
             {/* Reachable from any screen in one click (§9 boundary states). */}

@@ -8,4 +8,5 @@ storage/originals/*
 storage/ocr/*
 storage/pages/*
 storage/tmp/*
+storage/analysis/*
 !storage/**/.gitkeep

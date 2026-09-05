@@ -2,11 +2,31 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type CalendarEventDTO } from "../lib/api";
-import { BAND_LABELS, BAND_ORDER, bandFor, formatDate, relativeDays, type Band } from "../lib/format";
-import { ConfidenceBadge, tierRank } from "../lib/confidence";
+import {
+  BAND_LABELS,
+  BAND_ORDER,
+  bandFor,
+  formatDate,
+  formatDatesInText,
+  relativeDays,
+  type Band,
+} from "../lib/format";
+import { ConfidenceBadge, labelForTier } from "../lib/confidence";
 import { EmptyState, ErrorState, Skeleton } from "../components/ui";
 
-type Range = "90" | "180" | "all";
+// The five windows a user actually asks for. 90 days stays the default: it is the
+// product's forward-looking commitment, and quietly narrowing it would hide
+// obligations the tool exists to surface.
+const WINDOWS = [
+  { key: "today", label: "Today", days: 0 },
+  { key: "week", label: "This week", days: 7 },
+  { key: "30", label: "30 days", days: 30 },
+  { key: "60", label: "60 days", days: 60 },
+  { key: "90", label: "90 days", days: 90 },
+] as const;
+
+type WindowKey = (typeof WINDOWS)[number]["key"];
+const DEFAULT_WINDOW: WindowKey = "90";
 
 function addDays(iso: string, days: number): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -14,21 +34,29 @@ function addDays(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function clientToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function Calendar() {
   const qc = useQueryClient();
-  const [range, setRange] = useState<Range>("90"); // default is what gets demoed
+  const [windowKey, setWindowKey] = useState<WindowKey>(DEFAULT_WINDOW);
   const [confirmedOnly, setConfirmedOnly] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
 
-  // We fetch a wide window (all) and band client-side; the range control just
-  // changes the horizon we display. Keeps optimistic updates on one cache key.
+  const days = WINDOWS.find((w) => w.key === windowKey)!.days;
+
+  // The window is applied by the API via `to` (calendar.ts already does this
+  // arithmetic server-side for its default). `from` is deliberately NOT sent:
+  // an overdue deadline is the most important thing on this screen and must
+  // never fall out of the window.
   const params = useMemo(() => {
     const p = new URLSearchParams();
     p.set("status", showDismissed ? "all" : "active");
     if (confirmedOnly) p.set("minConfidence", "normalised");
-    p.set("to", "2999-01-01");
+    p.set("to", addDays(clientToday(), days));
     return p;
-  }, [confirmedOnly, showDismissed]);
+  }, [confirmedOnly, showDismissed, days]);
 
   const key = ["calendar", params.toString()];
   const cal = useQuery({ queryKey: key, queryFn: () => api.calendar(params) });
@@ -54,18 +82,13 @@ export default function Calendar() {
   if (cal.isError) return <ErrorState message={(cal.error as Error).message} />;
 
   const { today, events } = cal.data!;
-  const horizon = range === "all" ? "2999-01-01" : addDays(today, range === "90" ? 90 : 180);
 
-  const visible = events.filter((e) => {
-    if (!showDismissed && e.status === "dismissed") return false;
-    const eff = e.actionByDate ?? e.eventDate;
-    return eff <= horizon;
-  });
+  // The window is already applied server-side; only the dismissed toggle is local.
+  const visible = events.filter((e) => showDismissed || e.status !== "dismissed");
 
   const byBand = new Map<Band, CalendarEventDTO[]>();
   for (const e of visible) {
     const b = bandFor(today, e.actionByDate ?? e.eventDate);
-    if (range !== "all" && b === "later") continue;
     (byBand.get(b) ?? byBand.set(b, []).get(b)!).push(e);
   }
 
@@ -77,14 +100,17 @@ export default function Calendar() {
           <p className="text-muted">Sorted by the date you must act — the earlier date, not the event itself.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="flex overflow-hidden rounded border border-rule">
-            {(["90", "180", "all"] as Range[]).map((r) => (
+          <div className="flex overflow-hidden rounded border border-rule" role="group" aria-label="Time window">
+            {WINDOWS.map((w) => (
               <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 ${range === r ? "bg-navy text-white" : "bg-surface text-muted hover:bg-paper"}`}
+                key={w.key}
+                onClick={() => setWindowKey(w.key)}
+                aria-pressed={windowKey === w.key}
+                className={`px-3 py-1.5 ${
+                  windowKey === w.key ? "bg-navy text-white" : "bg-surface text-muted hover:bg-paper"
+                }`}
               >
-                {r === "all" ? "All" : `${r} days`}
+                {w.label}
               </button>
             ))}
           </div>
@@ -154,7 +180,8 @@ function EventRow({
   const actionBy = event.actionByDate;
   // A date the system inferred is a different kind of object from one quoted from
   // a clause — mark it (§9).
-  const lowConfidence = tierRank(event.confidenceTier) >= 2;
+  const displayLabel = labelForTier(event.confidenceTier);
+  const lowConfidence = displayLabel !== "quoted";
 
   return (
     <div
@@ -177,13 +204,13 @@ function EventRow({
       <div className="min-w-[14rem] flex-1">
         <div className="font-medium text-ink">{event.title}</div>
         <div className="text-sm text-muted">
-          {event.detail}
+          {formatDatesInText(event.detail)}
           {actionBy && actionBy !== event.eventDate && (
             <> · happens {formatDate(event.eventDate)}</>
           )}
         </div>
         <div className="mt-1 flex items-center gap-2">
-          <ConfidenceBadge tier={event.confidenceTier} size="sm" />
+          <ConfidenceBadge label={displayLabel} size="sm" />
           <Link to={`/documents/${event.documentId}`} className="link text-sm">
             View clause →
           </Link>

@@ -1,18 +1,21 @@
-"""CLI entrypoint: run the full pipeline against a single input document.
+"""CLI entrypoint: run the full pipeline against a single input document, or
+scan already-analyzed documents for cross-contract conflicts.
 
 Usage:
     python -m pdf_analyzer.cli analyze input.docx --output result.json
     python -m pdf_analyzer.cli analyze input.pdf --backend internvl --device cuda
+    python -m pdf_analyzer.cli conflicts ./analysis --output queue.json
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
 
-from .pipeline import analyze_and_write
+from .pipeline import analyze_and_write, load_analysis, scan_for_conflicts
 from .stage2_vlm import (
     BACKENDS,
     DEFAULT_INTERNVL_MODEL_ID,
@@ -95,9 +98,50 @@ def _build_parser() -> argparse.ArgumentParser:
         "1280*28*28). Lower this if you hit an MPS/CPU out-of-memory error on generate(); "
         "raise it (e.g. on a CUDA GPU with flash-attention) for sharper reads of small print.",
     )
+    analyze.add_argument(
+        "--contract-id",
+        default=None,
+        help="Identifier this contract is reported under (default: the input filename stem). "
+        "Set it to the caller's own document ID so a flagged conflict names something "
+        "the caller can resolve.",
+    )
     analyze.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging.")
 
+    conflicts = sub.add_parser(
+        "conflicts",
+        help="Scan analysis JSON files for cross-contract conflicts (no model calls).",
+    )
+    conflicts.add_argument(
+        "inputs",
+        type=Path,
+        nargs="+",
+        help="Analysis JSON files produced by `analyze`, and/or directories containing them.",
+    )
+    conflicts.add_argument(
+        "--output", type=Path, default=Path("conflicts.json"), help="Where to write the review queue."
+    )
+    conflicts.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging.")
+
     return parser
+
+
+def _collect_analysis_files(inputs: list[Path]) -> list[Path]:
+    files: list[Path] = []
+    for item in inputs:
+        if item.is_dir():
+            files.extend(sorted(item.glob("*.json")))
+        elif item.exists():
+            files.append(item)
+    # Same document analyzed twice would pair with itself; dedupe by path.
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in files:
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        unique.append(path)
+    return unique
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -144,8 +188,36 @@ def main(argv: list[str] | None = None) -> int:
             vlm_backend=vlm_backend,
             dpi=args.dpi,
             verification_threshold=args.threshold,
+            contract_id=args.contract_id,
         )
         print(f"Wrote analysis to {output_path}")
+        return 0
+
+    if args.command == "conflicts":
+        files = _collect_analysis_files(args.inputs)
+        if not files:
+            print("error: no analysis JSON files found in the given paths", file=sys.stderr)
+            return 1
+
+        analyses = []
+        for path in files:
+            try:
+                analyses.append(load_analysis(path))
+            except Exception as exc:  # a half-written or foreign JSON must not abort the scan
+                print(f"warning: skipping {path}: {exc}", file=sys.stderr)
+
+        if not analyses:
+            print("error: none of the given files parsed as an analysis", file=sys.stderr)
+            return 1
+
+        queue = scan_for_conflicts(analyses)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(queue.to_json_dict(), indent=2))
+        print(
+            f"Scanned {len(analyses)} analyses "
+            f"({queue.party_pass_groups} party groups, {queue.asset_pass_groups} asset groups); "
+            f"flagged {len(queue.conflicts)} conflict(s) -> {args.output}"
+        )
         return 0
 
     parser.print_help()

@@ -1,0 +1,122 @@
+{
+  "_readme": [
+    "Contracts (Rights of Third Parties) Act 2001 (2020 Rev Ed), Singapore.",
+    "PHASE 1 OUTPUT, all unverified_draft.",
+    "",
+    "SCOPE CORRECTION TO THE BRIEF: the scope table lists 's.1-s.3'. In this Act s.1 is the",
+    "short title and application provision. The operative right is s.2, and the route by",
+    "which parties contract OUT of it is s.2(1)(b) read with s.2(2) — not a separate",
+    "exclusion section. s.3 is about variation and rescission once a third party right has",
+    "already arisen, which is a different question.",
+    "",
+    "Role A treatment follows spec v2.1 §4: this Act does NOT assume most agreements exclude",
+    "it. The absence of an express exclusion clause is reported as a document-grounded",
+    "absence finding, not as a market-practice assumption."
+  ],
+  "chunks": [
+    {
+      "id": "sg_crtpa_s2_1",
+      "category": "statute",
+      "source": "Contracts (Rights of Third Parties) Act 2001 (2020 Rev Ed)",
+      "legacy_citation": "Cap 53B (2002 Rev Ed)",
+      "provision": "Section 2(1)",
+      "exact_wording": "Subject to the provisions of this Act, a person who is not a party to a contract (called in this Act a third party) may, in the third party’s own right, enforce a term of the contract if — (a) the contract expressly provides that the third party may; or (b) subject to subsection (2), the term purports to confer a benefit on the third party.",
+      "summary": "A non-party can enforce a contract term if the contract says so expressly, or if the term purports to confer a benefit on them.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["all_commercial"],
+      "applicability_conditions": [
+        "the contract was entered into on or after the commencement dates in section 1(2) and (3)",
+        "AND a term of the contract expressly permits third party enforcement, or purports to confer a benefit on an identified third party"
+      ],
+      "target_fields": ["third_party_rights"],
+      "trigger_keywords": ["third party", "for the benefit of", "beneficiary", "no third party"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/CRTPA2001",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "STITCHED from lead-in plus (a) and (b), which appeared in a different order on the retrieved page. Note the gender-neutral drafting ('the third party's own right') introduced in the 2020 Revised Edition — older texts read 'his own right', so a quotation copied from a pre-2020 source will not match."
+    },
+    {
+      "id": "sg_crtpa_s2_2",
+      "category": "statute",
+      "source": "Contracts (Rights of Third Parties) Act 2001 (2020 Rev Ed)",
+      "legacy_citation": "Cap 53B (2002 Rev Ed)",
+      "provision": "Section 2(2)",
+      "exact_wording": "Subsection (1)(b) does not apply if, on a proper construction of the contract, it appears that the parties did not intend the term to be enforceable by the third party.",
+      "summary": "The benefit route is displaced where, properly construed, the parties did not intend the third party to be able to enforce the term. This is how a contract contracts out.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["all_commercial"],
+      "applicability_conditions": [
+        "a term purports to confer a benefit on a third party under section 2(1)(b)",
+        "AND the question is whether the parties intended it to be enforceable — a clause expressly excluding this Act is the clearest case, but its absence does not settle the point either way"
+      ],
+      "target_fields": ["third_party_rights"],
+      "trigger_keywords": ["no third party", "nothing in this agreement", "not intend", "confers no rights", "Contracts (Rights of Third Parties)"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/CRTPA2001",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This is the provision that makes the v2.1 §4 CRTPA treatment correct: the tool should report whether an express exclusion clause was FOUND, and must not infer from its absence that third parties definitely have rights — s.2(2) turns on construction of the whole contract, which is a lawyer's judgment."
+    },
+    {
+      "id": "sg_crtpa_s2_3",
+      "category": "statute",
+      "source": "Contracts (Rights of Third Parties) Act 2001 (2020 Rev Ed)",
+      "legacy_citation": "Cap 53B (2002 Rev Ed)",
+      "provision": "Section 2(3)",
+      "exact_wording": "The third party must be expressly identified in the contract by name, as a member of a class or as answering a particular description, but need not be in existence when the contract is entered into.",
+      "summary": "The third party has to be identified in the contract by name, class or description, though they need not exist yet.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["all_commercial"],
+      "applicability_conditions": [
+        "a third party right is asserted under section 2(1)",
+        "AND the contract identifies a person, class or description said to be that third party"
+      ],
+      "target_fields": ["third_party_rights"],
+      "trigger_keywords": ["affiliates", "subsidiaries", "group companies", "successors", "permitted assigns", "third party"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/CRTPA2001",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "Useful in practice because references to 'Affiliates' or 'Group Companies' in a benefit clause can satisfy the class-identification requirement. Whether they do is a construction question, so this chunk supports a review trigger and not a conclusion."
+    },
+    {
+      "id": "sg_crtpa_s7_4",
+      "category": "statute",
+      "source": "Contracts (Rights of Third Parties) Act 2001 (2020 Rev Ed)",
+      "legacy_citation": "Cap 53B (2002 Rev Ed)",
+      "provision": "Section 7(4)",
+      "exact_wording": "Section 2 does not confer any right on a third party to enforce any term of a contract of employment against an employee.",
+      "summary": "The Act gives no third party a right to enforce an employment contract term against an employee.",
+      "role_type": "role_a_default",
+      "applicable_contract_types": ["employment"],
+      "applicability_conditions": [
+        "the contract is a contract of employment",
+        "AND the term would be enforced against the EMPLOYEE (the exception is one-directional)"
+      ],
+      "target_fields": ["third_party_rights"],
+      "trigger_keywords": ["employment", "employee", "non-compete", "non-solicit"],
+      "authority_basis": "statute_text",
+      "verification_status": "unverified_draft",
+      "provenance": {
+        "retrieved_from": "https://sso.agc.gov.sg/Act/CRTPA2001",
+        "retrieved_at": "2026-09-06",
+        "revised_edition": "2020 Rev Ed",
+        "transcription": "machine_assisted_from_source"
+      },
+      "note": "This is why CRTPA defaults must be contract-type gated rather than applied to 'all commercial' uniformly. An employment agreement in the portfolio needs this exception, not the general s.2 default, when the question is enforcement against the employee."
+    }
+  ]
+}

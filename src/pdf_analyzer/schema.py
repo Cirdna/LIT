@@ -293,6 +293,95 @@ class ClauseRef(BaseModel):
 
 
 # --------------------------------------------------------------------------
+# Statute layer
+#
+# Two roles, and the distinction is the whole point:
+#
+#   Role A supplies what the law provides when the contract is silent
+#          (StatutoryDefault). It is kept OUT of cuad_findings so that statute
+#          wording can never be mistaken for a quote from the document. A
+#          default is "displaced" once the contract is found to address the
+#          topic itself.
+#
+#   Role B reads what the contract DOES say and raises a trigger for a human
+#          (StatuteFlag). It never mutates the extracted field: the clause text
+#          stays exactly as extracted, and the flag sits alongside it.
+#
+# Neither role decides anything. This layer surfaces the provision and the
+# factors a lawyer must weigh; it does not weigh them.
+# --------------------------------------------------------------------------
+
+
+class StatuteRole(str, Enum):
+    DEFAULT_SUPPLYING = "role_a_default"  # gap-filler: applies unless displaced
+    REVIEWING = "role_b_review"  # validator: reads the clause, raises a trigger
+
+
+class StatutoryDefault(BaseModel):
+    """What the law supplies for a topic, absent contrary agreement."""
+
+    field_name: str
+    statute: str
+    citation: str  # e.g. "s.14(2)"
+    jurisdiction: str = "Singapore"
+
+    # A PARAPHRASE, always. `verbatim_text` stays None until someone loads the
+    # actual statute text from an authoritative source: this project refuses to
+    # present unverified wording as a quotation, and that rule does not stop
+    # applying just because the source is an Act rather than a contract.
+    effect: str
+    verbatim_text: Optional[str] = None
+
+    # The precondition for the default applying at all (e.g. "the seller sells
+    # in the course of a business"). Not evaluated here — stated for the reader.
+    applies_when: str
+
+    # Extracted categories whose presence means the contract addressed the topic.
+    displaced_by_categories: List[str] = Field(default_factory=list)
+    # False where no extracted category corresponds, i.e. this tool cannot tell
+    # whether the contract displaced the default. Silence is not agreement.
+    auto_displacement_supported: bool = True
+
+    is_displaced: bool = False
+    displaced_by: Optional[Source] = None  # the clause that displaced it
+
+    raised_by: str  # module that supplied it, for traceability
+
+
+class StatuteFlag(BaseModel):
+    """A trigger for human review — never a legal conclusion.
+
+    "This clause excludes the s.14 implied terms; reasonableness review
+    required" is a trigger. "This clause is void" is a conclusion, and nothing
+    in this layer is entitled to reach one.
+    """
+
+    flag_id: str
+    statute: str
+    citation: str
+    jurisdiction: str = "Singapore"
+
+    field_name: str  # the extracted field that triggered it
+    trigger: str  # what was detected, in plain language
+    review_required: str  # what a human must now decide
+    factors: List[str] = Field(default_factory=list)  # what that decision turns on
+
+    excerpt: str  # the clause text as extracted, unmodified
+    source: Optional[Source] = None
+    location: Optional[Location] = None
+
+    # None  = not a reasonableness question at all
+    # False = the Act admits no reasonableness escape (e.g. UCTA s.2(1))
+    # True  = a statutory reasonableness test applies
+    reasonableness_test_applies: Optional[bool] = None
+
+    # Never False. This layer raises questions; it does not close them.
+    requires_human_review: bool = True
+
+    raised_by: str
+
+
+# --------------------------------------------------------------------------
 # The per-contract record
 # --------------------------------------------------------------------------
 
@@ -319,6 +408,13 @@ class ContractAnalysis(BaseModel):
 
     # Comparable form of the restrictive clauses found above.
     structured_clauses: List[StructuredClause] = Field(default_factory=list)
+
+    # Statute layer, deliberately parallel to cuad_findings: what the law
+    # supplies where the contract is silent (Role A), and what the law wants
+    # looked at in what the contract does say (Role B). Neither is merged into
+    # the extracted findings.
+    statutory_defaults: Dict[str, StatutoryDefault] = Field(default_factory=dict)
+    flags: List[StatuteFlag] = Field(default_factory=list)
 
     def to_json_dict(self) -> dict:
         return self.model_dump(mode="json")
