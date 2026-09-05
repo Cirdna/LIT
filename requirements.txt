@@ -1,0 +1,16 @@
+pymupdf>=1.24
+pytesseract>=0.3.10
+pillow>=10.0
+rapidfuzz>=3.6
+pydantic>=2.6
+playwright>=1.42
+torch>=2.2
+transformers>=4.49
+accelerate>=0.30
+qwen-vl-utils>=0.0.8
+torchvision>=0.17
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+pytest>=8.0
+pytest-cov>=5.0
