@@ -36,7 +36,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from .cuad_classes import CUAD_CLASSES
+from .cuad_classes import CUAD_CLASSES, CUAD_DEFINITIONS
 
 logger = logging.getLogger(__name__)
 
@@ -164,21 +164,49 @@ def _build_single_category_prompt(category_key: str) -> str:
     category is fixed by which prompt was sent, the response doesn't need to
     name it at all, which also removes the "model invents a category name"
     failure mode the 41-way prompt has to filter for.
+
+    Two more things this version fixes, found by scoring granular mode's
+    first real run against expert ground truth (it recovered none of the
+    three misfiling targets above, and lost one clean hit):
+
+    - The bare category label isn't enough to find the clause. Handed just
+      "Non-Disparagement", the model has to independently deduce that
+      "shall not tarnish or bring into disrepute the reputation of ...
+      goodwill" is an instance -- and often didn't, despite that exact text
+      being present. CUAD_DEFINITIONS below gives each category a real
+      definition plus the wording contracts actually use for it, mined from
+      the same ground truth that exposed the gap.
+    - "Do not force a match" turned out to be *too* conservative once
+      isolated per category: recall got worse, not better, when the prompt
+      leaned this hard against reporting anything uncertain. Stage 3 already
+      verifies every extraction against the page's OCR text and discounts
+      ungrounded or low-evidence matches (see stage3_reconcile.py) -- that
+      is where over-eager matches should get caught, not here. So this
+      version asks for anything plausibly relevant instead of holding back.
     """
     category_name = CUAD_CLASSES[category_key]
+    definition = CUAD_DEFINITIONS[category_key]
     return f"""You are a contract analysis engine reviewing one page of a legal contract.
 
 Does this page contain text addressing this specific category: {category_name}?
 
-Look for genuine textual support before answering yes -- do not force a match
-to something unrelated just because it is the closest available category.
+Definition and what to look for:
+{definition}
 
-If yes: copy the relevant text VERBATIM from the image (do not paraphrase,
-summarize, or invent text), and give a short label for the clause or section
-it appears under.
+Read the page carefully against that definition -- the contract's own wording
+is very often different from the category name itself (a non-disparagement
+clause may say "tarnish" or "disrepute" and never use the word "disparage";
+a covenant not to sue may say "contest" or "challenge" and never say "sue").
 
-If no genuine textual support for "{category_name}" exists on this page,
-answer with found: false.
+If you find text that plausibly matches, report it even if you are not fully
+certain -- a downstream step separately verifies every match against the
+source text, so it is better to report a plausible candidate than to hold
+back. Copy the text VERBATIM from the image (do not paraphrase, summarize,
+or invent text), and give a short label for the clause or section it appears
+under.
+
+If there is truly nothing on this page relating to "{category_name}", answer
+with found: false.
 
 Respond with ONLY JSON, no markdown fences, no commentary, in exactly this shape:
 {{"found": true, "vlm_text": "<verbatim text>", "clause_label": "<section heading>"}}
