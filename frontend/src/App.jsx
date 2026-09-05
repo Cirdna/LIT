@@ -59,7 +59,7 @@ export default function App() {
       <div className="app-body">
         <aside className="sidebar">
           {!result && <p className="hint">Upload a contract to see extracted CUAD fields here.</p>}
-          {result && <ExtractionList extractions={result.cuad_extractions} onSelect={setSelected} selected={selected} />}
+          {result && <ExtractionList findings={result.cuad_findings} onSelect={setSelected} selected={selected} />}
         </aside>
         <main className="viewer-pane">
           <PdfViewer pdfUrl={pdfUrl} selectedExtraction={selected} />
@@ -69,36 +69,58 @@ export default function App() {
   );
 }
 
-function ExtractionList({ extractions, onSelect, selected }) {
-  const populatedClasses = Object.entries(extractions).filter(([, items]) => items.length > 0);
+function ExtractionList({ findings, onSelect, selected }) {
+  const entries = Object.entries(findings || {});
+  const withQuotes = entries.filter(([, f]) => f.extractions.length > 0);
+  // Categories answered without a quote are still answers -- an explicit
+  // "absent" or an open "unresolved" -- so they're listed rather than hidden.
+  const withoutQuotes = entries.filter(([, f]) => f.extractions.length === 0);
 
-  if (populatedClasses.length === 0) {
-    return <p className="hint">No CUAD categories were extracted from this document.</p>;
+  if (entries.length === 0) {
+    return <p className="hint">No findings in this document.</p>;
   }
 
   return (
     <div className="extraction-list">
-      {populatedClasses.map(([cuadClass, items]) => (
+      {withQuotes.map(([cuadClass, finding]) => (
         <div key={cuadClass} className="extraction-group">
           <h3>{cuadClass.replaceAll("_", " ")}</h3>
-          {items.map((item, i) => (
-            <button
-              key={i}
-              className={`extraction-item ${item.is_verified ? "verified" : "unverified"} ${
-                selected === item ? "selected" : ""
-              }`}
-              onClick={() => onSelect(item)}
-              title={item.review_flag.reason}
-            >
-              <span className="extraction-text">{item.vlm_text}</span>
-              <span className="extraction-meta">
-                p.{item.source.page} · {Math.round(item.confidence * 100)}%
-                {!item.is_verified && " · needs review"}
-              </span>
-            </button>
-          ))}
+          {finding.extractions.map((item, i) => {
+            const grounded = item.ocr_verification.is_grounded;
+            return (
+              <button
+                key={i}
+                className={`extraction-item ${grounded ? "verified" : "unverified"} ${
+                  selected === item ? "selected" : ""
+                }`}
+                onClick={() => onSelect(item)}
+                title={finding.review_flag.reason}
+              >
+                <span className="extraction-text">{item.vlm_text}</span>
+                <span className="extraction-meta">
+                  p.{item.source.page} · {finding.evidence_status} ·{" "}
+                  {Math.round(item.ocr_verification.score)}%
+                  {finding.review_flag.flagged && " · needs review"}
+                </span>
+              </button>
+            );
+          })}
         </div>
       ))}
+
+      {withoutQuotes.length > 0 && (
+        <div className="extraction-group">
+          <h3>answered without a quote</h3>
+          {withoutQuotes.map(([cuadClass, finding]) => (
+            <div key={cuadClass} className="extraction-item unquoted" title={finding.review_flag.reason}>
+              <span className="extraction-text">{cuadClass.replaceAll("_", " ")}</span>
+              <span className="extraction-meta">
+                {finding.answer} · {finding.evidence_status}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -13,10 +13,14 @@ from pathlib import Path
 
 from .cuad_classes import CUAD_CLASSES
 from .schema import (
+    AnswerStatus,
+    CategoryFinding,
     ContractAnalysis,
     CuadExtraction,
     DocumentMetadata,
+    EvidenceStatus,
     Location,
+    OcrVerification,
     ReviewFlag,
     Source,
 )
@@ -34,33 +38,76 @@ def _build_extraction(
     page_number: int,
     match,
 ) -> CuadExtraction:
-    is_verified = match.is_verified if match is not None else False
-    confidence = round((match.match_score if match is not None else 0.0) / 100.0, 4)
-    ocr_verified_text = match.matched_text if match is not None else ""
+    grounded = match.is_verified if match is not None else False
+    ocr_text = match.matched_text if match is not None else ""
     bbox_1000 = match.bbox_1000 if match is not None else [0.0, 0.0, 0.0, 0.0]
-
-    evidence_status = "direct" if is_verified else "derived"
-    if is_verified:
-        reason = "High-confidence alignment between VLM and OCR text (>= 85% match)."
-    else:
-        reason = (
-            f"Alignment score below the {VERIFICATION_THRESHOLD:.0f}% verification "
-            "threshold; requires human audit."
-        )
 
     return CuadExtraction(
         vlm_text=vlm_text,
-        ocr_verified_text=ocr_verified_text,
-        confidence=confidence,
-        is_verified=is_verified,
         location=Location(page=page_number, bbox_1000=bbox_1000),
         source=Source(
             page=page_number,
             clause=clause_label or "Unlabeled",
-            exact_supporting_text=ocr_verified_text,
+            exact_supporting_text=ocr_text,
         ),
-        evidence_status=evidence_status,
-        review_flag=ReviewFlag(flagged=not is_verified, reason=reason),
+        ocr_verification=OcrVerification(
+            ocr_text=ocr_text,
+            score=match.match_score if match is not None else 0.0,
+            recall=match.recall if match is not None else 0.0,
+            evidence_mass=match.evidence_mass if match is not None else 0.0,
+            is_grounded=grounded,
+        ),
+    )
+
+
+def _finding_for(extractions: list) -> CategoryFinding:
+    """Build a category answer from whatever this stage managed to extract.
+
+    A category with no extraction is reported as UNRESOLVED, never ABSENT.
+    Asserting absence is a substantive legal claim -- expert review says "no
+    clause located restricting solicitation" only after looking -- and the
+    current extraction stage cannot distinguish "this contract has no such
+    clause" from "the model failed to report one". Recording silence as
+    ABSENT would turn every extraction miss into a confident wrong answer,
+    which is worse than a flagged gap.
+    """
+    if not extractions:
+        return CategoryFinding(
+            answer=AnswerStatus.UNRESOLVED,
+            summary="",
+            evidence_status=EvidenceStatus.UNRESOLVED,
+            review_flag=ReviewFlag(
+                flagged=True,
+                reason=(
+                    "No extraction produced for this category; absence has not been "
+                    "verified, so this is an open question rather than a 'no'."
+                ),
+            ),
+            extractions=[],
+        )
+
+    grounded = [e for e in extractions if e.ocr_verification.is_grounded]
+    if grounded:
+        return CategoryFinding(
+            answer=AnswerStatus.PRESENT,
+            summary=grounded[0].vlm_text,
+            evidence_status=EvidenceStatus.DIRECT,
+            review_flag=ReviewFlag(flagged=False, reason=""),
+            extractions=extractions,
+        )
+
+    return CategoryFinding(
+        answer=AnswerStatus.PRESENT,
+        summary=extractions[0].vlm_text,
+        evidence_status=EvidenceStatus.UNRESOLVED,
+        review_flag=ReviewFlag(
+            flagged=True,
+            reason=(
+                "Extracted text could not be grounded in the page's OCR above the "
+                f"{VERIFICATION_THRESHOLD:.0f}% threshold; verify the quote before relying on it."
+            ),
+        ),
+        extractions=extractions,
     )
 
 
@@ -99,13 +146,19 @@ def analyze_document(
             cuad_extractions[item.cuad_class].append(extraction)
 
     logger.info("Stage 4: assembling enriched CUAD JSON")
+    # Every one of the 41 categories gets an answer, including the ones with
+    # nothing extracted -- silence in the output is otherwise ambiguous
+    # between "no such clause" and "the extractor missed it".
+    findings = {key: _finding_for(cuad_extractions[key]) for key in CUAD_CLASSES}
+
     analysis = ContractAnalysis(
+        contract_id=input_path.stem,
         document_metadata=DocumentMetadata(
             source_file=str(input_path.name),
             processed_pdf=str(ingest_result.standardized_pdf.name),
             total_pages=ingest_result.total_pages,
         ),
-        cuad_extractions=cuad_extractions,
+        cuad_findings=findings,
     )
     return analysis
 

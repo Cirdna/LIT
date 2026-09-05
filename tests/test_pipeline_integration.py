@@ -14,6 +14,7 @@ import pytest
 
 from pdf_analyzer import pipeline as pipeline_mod
 from pdf_analyzer.stage2_ocr import OcrPageResult, OcrWord
+from pdf_analyzer.schema import AnswerStatus, EvidenceStatus
 from pdf_analyzer.stage2_vlm import VlmBackend, VlmClauseExtraction, VlmPageResult
 
 
@@ -110,25 +111,29 @@ def test_pipeline_wires_stages_together_correctly(sample_pdf, tmp_path, monkeypa
     assert analysis.document_metadata.source_file == "sample.pdf"
     assert analysis.document_metadata.total_pages == 1
 
-    # All 41 CUAD keys are present even when empty.
-    assert len(analysis.cuad_extractions) == 41
+    # All 41 CUAD categories are answered, not just the ones with hits.
+    assert len(analysis.cuad_findings) == 41
 
-    doc_name = analysis.cuad_extractions["document_name"]
-    assert len(doc_name) == 1
-    assert doc_name[0].source.page == 1
-    assert doc_name[0].is_verified
+    doc_name = analysis.cuad_findings["document_name"]
+    assert doc_name.answer is AnswerStatus.PRESENT
+    assert doc_name.evidence_status is EvidenceStatus.DIRECT
+    assert doc_name.extractions[0].source.page == 1
+    assert doc_name.extractions[0].ocr_verification.is_grounded
 
-    governing_law = analysis.cuad_extractions["governing_law"]
-    assert len(governing_law) == 1
-    assert governing_law[0].is_verified
-    assert "California" in governing_law[0].ocr_verified_text
+    governing_law = analysis.cuad_findings["governing_law"]
+    assert governing_law.answer is AnswerStatus.PRESENT
+    assert "California" in governing_law.extractions[0].ocr_verification.ocr_text
 
-    # Hallucinated/ungrounded extraction: no matching OCR text on the page.
-    insurance = analysis.cuad_extractions["insurance"]
-    assert len(insurance) == 1
-    assert not insurance[0].is_verified
-    assert insurance[0].review_flag.flagged
-    assert insurance[0].evidence_status == "derived"
+    # Ungrounded extraction: text the OCR can't corroborate on the page.
+    insurance = analysis.cuad_findings["insurance"]
+    assert not insurance.extractions[0].ocr_verification.is_grounded
+    assert insurance.review_flag.flagged
+    assert insurance.evidence_status is EvidenceStatus.UNRESOLVED
 
-    # Categories with no extractions on this document stay empty, not absent.
-    assert analysis.cuad_extractions["non_compete"] == []
+    # A category with nothing extracted is UNRESOLVED, never ABSENT: this
+    # stage cannot tell "no such clause" from "the model missed it", and
+    # asserting absence would be a confident wrong answer.
+    non_compete = analysis.cuad_findings["non_compete"]
+    assert non_compete.answer is AnswerStatus.UNRESOLVED
+    assert non_compete.answer is not AnswerStatus.ABSENT
+    assert non_compete.review_flag.flagged

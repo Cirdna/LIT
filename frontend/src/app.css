@@ -70,3 +70,5 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sa
 
 .viewer-pane { flex: 1; overflow-y: auto; background: #525659; display: flex; justify-content: center; padding: 20px 0; }
 .pdf-viewer-empty { color: #ccc; margin-top: 40px; }
+
+.extraction-item.unquoted { border-left-color: #cbd5e1; cursor: default; color: #64748b; }
