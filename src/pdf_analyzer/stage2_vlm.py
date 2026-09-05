@@ -36,7 +36,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from .cuad_classes import CUAD_CLASSES, CUAD_DEFINITIONS
+from .cuad_classes import CUAD_CLASSES, category_definition
 
 logger = logging.getLogger(__name__)
 
@@ -173,9 +173,9 @@ def _build_single_category_prompt(category_key: str) -> str:
       "Non-Disparagement", the model has to independently deduce that
       "shall not tarnish or bring into disrepute the reputation of ...
       goodwill" is an instance -- and often didn't, despite that exact text
-      being present. CUAD_DEFINITIONS below gives each category a real
-      definition plus the wording contracts actually use for it, mined from
-      the same ground truth that exposed the gap.
+      being present. category_definition() supplies CUAD's own authoritative
+      description of the category's scope, plus the wording real contracts
+      use for it (see cuad_classes.py for the provenance of each half).
     - "Do not force a match" turned out to be *too* conservative once
       isolated per category: recall got worse, not better, when the prompt
       leaned this hard against reporting anything uncertain. Stage 3 already
@@ -185,7 +185,7 @@ def _build_single_category_prompt(category_key: str) -> str:
       version asks for anything plausibly relevant instead of holding back.
     """
     category_name = CUAD_CLASSES[category_key]
-    definition = CUAD_DEFINITIONS[category_key]
+    definition = category_definition(category_key)
     return f"""You are a contract analysis engine reviewing one page of a legal contract.
 
 Does this page contain text addressing this specific category: {category_name}?
