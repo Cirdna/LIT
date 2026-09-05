@@ -1,0 +1,227 @@
+// AITHENA schema. Prisma owns these migrations; the Python worker treats the
+// resulting SQL schema as read-only truth and talks to it with psycopg + plain
+// SQL. Do not attempt to share an ORM across languages.
+//
+// Every table carries workspace_id even though v1 has a single workspace —
+// retrofitting tenancy is painful and the column is free now.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  documents      Document[]
+  calendarEvents CalendarEvent[]
+  conflicts      Conflict[]
+  handoffBriefs  HandoffBrief[]
+  jobs           Job[]
+
+  @@map("workspaces")
+}
+
+model Document {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId       String    @map("workspace_id") @db.Uuid
+  filename          String
+  sha256            String
+  byteSize          BigInt    @map("byte_size")
+  mimeType          String    @map("mime_type")
+  storageKey        String    @map("storage_key") // path under ./storage/originals/
+  status            String // queued|processing|ready|degraded|failed|unsupported
+  provenanceQuality String?   @map("provenance_quality") // exact|degraded|text_only
+  pageCount         Int?      @map("page_count")
+  ocrApplied        Boolean   @default(false) @map("ocr_applied")
+  docType           String?   @map("doc_type") // nda|lease|msa|distribution|employment|other|not_a_contract
+  docTypeConf       Float?    @map("doc_type_conf") @db.Real
+  counterparty      String? // convenience denorm of the extracted party field
+  warnings          Json      @default("[]")
+  error             String?
+  pipelineVersion   String?   @map("pipeline_version")
+  uploadedAt        DateTime  @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+  processedAt       DateTime? @map("processed_at") @db.Timestamptz(6)
+
+  workspace      Workspace         @relation(fields: [workspaceId], references: [id])
+  text           DocumentText?
+  pages          DocumentPage[]
+  textLines      TextLine[]
+  segments       DocumentSegment[]
+  fields         ExtractedField[]
+  calendarEvents CalendarEvent[]
+  jobs           Job[]
+
+  @@unique([workspaceId, sha256])
+  @@map("documents")
+}
+
+model DocumentText {
+  documentId String @id @map("document_id") @db.Uuid
+  text       String
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_text")
+}
+
+model DocumentPage {
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId       String  @map("document_id") @db.Uuid
+  pageNumber       Int     @map("page_number")
+  width            Float   @db.Real // PDF points
+  height           Float   @db.Real
+  charStart        Int     @map("char_start")
+  charEnd          Int     @map("char_end")
+  extractionMethod String  @map("extraction_method") // pdf_text|ocr|docx|plain_text
+  ocrConfMean      Float?  @map("ocr_conf_mean") @db.Real
+  pageRole         String? @map("page_role") // cover|operative|signature|schedule|exhibit|other
+  imageKey         String? @map("image_key") // rendered PNG under ./storage/pages/
+  imageDpi         Int?    @map("image_dpi")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+  @@map("document_pages")
+}
+
+// The anchor table. Extraction cites these IDs; the UI resolves them to boxes.
+model TextLine {
+  id         BigInt @id @default(autoincrement())
+  documentId String @map("document_id") @db.Uuid
+  lineId     String @map("line_id") // 'L0412', stable within a document
+  pageNumber Int    @map("page_number")
+  charStart  Int    @map("char_start")
+  charEnd    Int    @map("char_end")
+  bbox       Json // {x0,y0,x1,y1} in PDF points, top-left origin
+  text       String
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, lineId])
+  @@index([documentId, pageNumber])
+  @@map("text_lines")
+}
+
+// Clause / section structure. Citations must name a CLAUSE, not only a page.
+model DocumentSegment {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId  String  @map("document_id") @db.Uuid
+  segmentKey  String  @map("segment_key") // stable within document, e.g. 'S0031'
+  level       Int
+  numberLabel String? @map("number_label") // '12.3', '(a)', 'ARTICLE IV', 'SCHEDULE 2'
+  headingText String? @map("heading_text")
+  charStart   Int     @map("char_start")
+  charEnd     Int     @map("char_end")
+  pageStart   Int     @map("page_start")
+  pageEnd     Int     @map("page_end")
+  parentKey   String? @map("parent_key")
+  confidence  String // structural|heuristic|fallback
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, segmentKey])
+  @@map("document_segments")
+}
+
+model ExtractedField {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId       String   @map("document_id") @db.Uuid
+  fieldKey         String   @map("field_key") // party_a|term_end|notice_period|liability_cap|...
+  valueVerbatim    String?  @map("value_verbatim") // exact text from the contract
+  valueNormalized  Json?    @map("value_normalized") // {"days":60} | {"date":"2026-03-15"} | {"amount":50000,"currency":"SGD"}
+  confidenceTier   String   @map("confidence_tier") // verbatim|normalised|assembled|inferred|unverified
+  claimType        String   @map("claim_type") // contract_text|computed|benchmark
+  absenceReason    String?  @map("absence_reason") // not_present|not_found|illegible (when value is null)
+  anchorLineIds    String[] @default([]) @map("anchor_line_ids")
+  segmentKey       String?  @map("segment_key") // resolves to document_segments
+  clauseLabel      String?  @map("clause_label") // denormalised display label: 'Clause 12.3'
+  consistencyScore Float?   @map("consistency_score") @db.Real
+  vlmAgreement     Float?   @map("vlm_agreement") @db.Real
+  modelVersion     String?  @map("model_version")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, fieldKey])
+  @@map("extracted_fields")
+}
+
+model CalendarEvent {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId    String    @map("workspace_id") @db.Uuid
+  documentId     String    @map("document_id") @db.Uuid
+  eventType      String    @map("event_type") // expiry|auto_renewal|notice_deadline|payment_due
+  eventDate      DateTime  @map("event_date") @db.Date // when the thing happens
+  actionByDate   DateTime? @map("action_by_date") @db.Date // last date to act
+  title          String
+  detail         String?
+  confidenceTier String    @map("confidence_tier")
+  sourceFieldIds String[]  @default([]) @map("source_field_ids") @db.Uuid
+  status         String    @default("open") // open|acknowledged|dismissed
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, actionByDate])
+  @@map("calendar_events")
+}
+
+model Conflict {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId    String   @map("workspace_id") @db.Uuid
+  conflictType   String   @map("conflict_type") // exclusivity_breach|cap_mismatch|...
+  severity       String // high|medium|low
+  summary        String
+  documentIds    String[] @map("document_ids") @db.Uuid
+  fieldIds       String[] @default([]) @map("field_ids") @db.Uuid
+  confidenceTier String   @map("confidence_tier")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@map("conflicts")
+}
+
+model HandoffBrief {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  trigger     String // what boundary was hit
+  issue       String
+  established Json // what the tool determined, with citations
+  question    String // the specific question needing a lawyer
+  documentIds String[] @map("document_ids") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@map("handoff_briefs")
+}
+
+model Job {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  documentId  String?   @map("document_id") @db.Uuid
+  jobType     String    @map("job_type") // ingest|extract|recompute_calendar|detect_conflicts
+  status      String    @default("queued") // queued|running|done|failed
+  stage       String? // human-readable progress: 'ocr page 4/12'
+  progress    Float     @default(0) @db.Real // 0..1
+  attempts    Int       @default(0)
+  error       String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  startedAt   DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt  DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  document  Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@map("jobs")
+}

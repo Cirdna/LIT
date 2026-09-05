@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.log
+
+# Shared storage: keep the directory tree, ignore the artifacts.
+storage/originals/*
+storage/ocr/*
+storage/pages/*
+storage/tmp/*
+!storage/**/.gitkeep

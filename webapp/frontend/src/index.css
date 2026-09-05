@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  font-size: 16.5px; /* generous base for projector legibility */
+}
+
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+}
+
+/* Visible keyboard focus everywhere (quality floor). */
+:focus-visible {
+  outline: 2px solid theme("colors.navy");
+  outline-offset: 2px;
+}
+
+/* Numbers and dates line up in tables. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Respect reduced-motion (quality floor). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Handoff briefs are received by email and printed. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .panel {
+    border-color: #bbb;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded border border-rule bg-surface px-3.5 py-2 text-[0.95rem] font-medium text-ink transition-colors hover:bg-paper focus-visible:outline;
+  }
+  .btn-primary {
+    @apply border-navy bg-navy text-white hover:bg-navydark;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1 text-sm;
+  }
+  .panel {
+    @apply rounded border border-rule bg-surface;
+  }
+  .link {
+    @apply text-navy underline decoration-navy/30 underline-offset-2 hover:decoration-navy;
+  }
+  .eyebrow {
+    @apply text-sm font-semibold text-muted;
+  }
+}

@@ -1,0 +1,27 @@
+# The database is one half of the seam between Node and the Python worker.
+# `docker compose up -d` gives you a Postgres 16 that both sides connect to.
+#
+# Hosted fallback (if the demo machine has no Docker): create a free Postgres on
+# Neon (https://neon.tech) or Supabase (https://supabase.com), paste its
+# connection string into .env as DATABASE_URL, and skip this file entirely.
+services:
+  db:
+    image: postgres:16
+    container_name: aithena-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aithena
+      POSTGRES_PASSWORD: aithena
+      POSTGRES_DB: aithena
+    ports:
+      - "5432:5432"
+    volumes:
+      - aithena-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aithena -d aithena"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  aithena-pgdata:
