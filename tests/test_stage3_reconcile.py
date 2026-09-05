@@ -109,3 +109,53 @@ def test_reconcile_phrase_out_of_order_tokens_do_not_falsely_anchor():
     assert match is not None
     # "California" anchors first; cursor then can't walk back to find "of"/"the" before it.
     assert match.match_score == pytest.approx(100.0 / 3.0)
+
+
+def _page_of_words(tokens, page_number=1, y=100, width_px=2550, height_px=3300):
+    """Lay tokens out left-to-right on one synthetic line."""
+    words = []
+    x = 100
+    for token in tokens:
+        w = 12 * len(token) + 10
+        words.append(_word(token, x, y, x + w, y + 30))
+        x += w + 8
+    return OcrPageResult(
+        page_number=page_number, width_px=width_px, height_px=height_px, words=words
+    )
+
+
+def test_phrase_far_down_the_page_is_still_found():
+    """Regression: a single greedy pass from index 0 could only find the
+    leading token within one lookahead window of the top of the page, so
+    clause headings and footers lower down scored zero despite being present
+    in the OCR (seen on real contract pages with 'Counterparts.' at word 144
+    and a '1/7/2019' footer at word 378)."""
+    filler = ["filler"] * 300
+    page = _page_of_words(filler + ["Counterparts.", "This", "Agreement", "may", "be", "executed"])
+
+    match = reconcile_phrase("Counterparts.", page)
+
+    assert match is not None
+    assert match.match_score == pytest.approx(100.0)
+    assert match.is_verified
+    assert match.matched_text == "Counterparts."
+
+
+def test_best_occurrence_wins_over_first_superficial_match():
+    """Regression: contract pages repeat boilerplate, so the earliest
+    superficial match is often the wrong occurrence. The alignment recalling
+    the most phrase tokens must win, otherwise the bounding box points at
+    plausible-looking but wrong text."""
+    decoy = "This Agreement may be amended only in writing signed by both parties".split()
+    real = "This Agreement shall be governed by the laws of the State of Delaware".split()
+    page = _page_of_words(decoy + ["filler"] * 50 + real)
+
+    match = reconcile_phrase(
+        "This Agreement shall be governed by the laws of the State of Delaware", page
+    )
+
+    assert match is not None
+    assert match.match_score == pytest.approx(100.0)
+    assert "Delaware" in match.matched_text
+    # Must have anchored past the decoy, not on it.
+    assert "amended" not in match.matched_text

@@ -14,13 +14,18 @@ order, but with unrelated filler words inserted between them (the actual
 "and construed in accordance with... State of" tissue of the real sentence).
 
 That relationship — same tokens, same order, arbitrary insertions in
-between — is exactly what a left-to-right greedy anchor alignment finds: walk
-the phrase's tokens in order, and for each one search a bounded lookahead
-window of OCR words (starting where the previous token was found) for the
-best Levenshtein-similarity match. This is the n-gram sliding window the
-gameplan describes, applied per-token rather than per-fixed-size-window,
-which is what makes it robust to the filler-word insertions a naive
-whole-phrase window match penalizes.
+between — is exactly what a token-level anchor alignment finds: walk the
+phrase's tokens in order, and for each one search a bounded lookahead window
+of OCR words (starting where the previous token was found) for the best
+Levenshtein-similarity match. This is the n-gram sliding window the gameplan
+describes, applied per-token rather than per-fixed-size-window, which is what
+makes it robust to the filler-word insertions a naive whole-phrase window
+match penalizes.
+
+Because contract pages repeat boilerplate heavily, that walk is run from
+every position where the phrase's leading token occurs and the best-recalling
+alignment is kept, rather than committing to the first one found (see
+`_align_tokens`).
 
 The match score is the fraction of phrase tokens successfully anchored
 (recall) — a direct measure of "how much of what the VLM claimed is actually
@@ -50,6 +55,11 @@ _LOOKAHEAD_WORDS = 40
 # Per-token similarity floor for treating an OCR word as a match for a
 # phrase token (0-100, rapidfuzz ratio).
 _TOKEN_MATCH_THRESHOLD = 80.0
+
+# Upper bound on how many candidate start positions to try per phrase. A
+# phrase beginning with a very common word ("the", "this") can match many
+# positions on a dense page; this keeps the search cost bounded.
+_MAX_CANDIDATE_STARTS = 200
 
 _PUNCT_RE = re.compile(r"[^\w]+")
 
@@ -100,29 +110,30 @@ def _tokens_match(phrase_token: str, word_token: str) -> bool:
     return fuzz.ratio(phrase_token, word_token) >= _TOKEN_MATCH_THRESHOLD
 
 
-def _align_tokens(phrase_tokens: list[str], words: list[OcrWord]) -> list[int]:
-    """Greedily anchor each phrase token, in order, to an OCR word index.
+def _align_from(
+    phrase_tokens: list[str], word_tokens: list[str], start_index: int
+) -> list[int]:
+    """Greedy forward alignment of `phrase_tokens` beginning at `start_index`.
 
-    Returns the list of matched word indices (strictly increasing, one per
-    successfully anchored phrase token; unmatched tokens are simply skipped).
+    The lookahead bound applies *between* consecutive tokens, keeping a single
+    alignment spatially coherent: a clause's words sit near each other, so a
+    token found hundreds of words later belongs to a different occurrence.
+    Tokens that find no match are skipped without advancing the cursor.
     """
-    word_tokens = [_clean(w.text) for w in words]
     matched_indices: list[int] = []
-    cursor = 0
+    cursor = start_index
 
     for phrase_token in phrase_tokens:
-        clean_phrase_token = _clean(phrase_token)
-        if not clean_phrase_token:
-            continue
-
-        search_end = min(len(words), cursor + _LOOKAHEAD_WORDS)
+        search_end = min(len(word_tokens), cursor + _LOOKAHEAD_WORDS)
         best_index = None
         best_score = -1.0
         for i in range(cursor, search_end):
-            if not _tokens_match(clean_phrase_token, word_tokens[i]):
+            if not _tokens_match(phrase_token, word_tokens[i]):
                 continue
-            score = 100.0 if clean_phrase_token == word_tokens[i] else fuzz.ratio(
-                clean_phrase_token, word_tokens[i]
+            score = (
+                100.0
+                if phrase_token == word_tokens[i]
+                else fuzz.ratio(phrase_token, word_tokens[i])
             )
             if score > best_score:
                 best_score = score
@@ -133,6 +144,56 @@ def _align_tokens(phrase_tokens: list[str], words: list[OcrWord]) -> list[int]:
             cursor = best_index + 1
 
     return matched_indices
+
+
+def _align_tokens(phrase_tokens: list[str], words: list[OcrWord]) -> list[int]:
+    """Anchor `phrase_tokens` to OCR word indices, returning the best alignment.
+
+    Every position on the page where the phrase's leading token appears is
+    tried as a starting point, and the alignment recalling the most phrase
+    tokens wins (ties broken toward the tightest span). Both properties are
+    load-bearing:
+
+    - Scanning the whole page for the start. A single greedy pass from index 0
+      could only ever find the leading token within one lookahead window of the
+      top of the page, so clauses lower down — section headings, footers —
+      silently scored zero despite being present in the OCR.
+    - Picking the best alignment rather than the first. Contract pages repeat
+      boilerplate constantly ("This Agreement shall..."), so the earliest
+      superficial match is often the wrong occurrence; committing to it yields
+      a plausible-looking but wrong bounding box.
+    """
+    word_tokens = [_clean(w.text) for w in words]
+    clean_phrase = [t for t in (_clean(t) for t in phrase_tokens) if t]
+    if not clean_phrase or not word_tokens:
+        return []
+
+    # Anchor on the leading token, falling back through the next couple of
+    # tokens in case OCR mangled the first word.
+    candidate_starts: list[int] = []
+    for lead in range(min(3, len(clean_phrase))):
+        candidate_starts = [
+            i for i, wt in enumerate(word_tokens) if _tokens_match(clean_phrase[lead], wt)
+        ]
+        if candidate_starts:
+            break
+
+    if not candidate_starts:
+        return []
+
+    best_matched: list[int] = []
+    best_key: tuple[int, int] | None = None
+    for start in candidate_starts[:_MAX_CANDIDATE_STARTS]:
+        matched = _align_from(clean_phrase, word_tokens, start)
+        if not matched:
+            continue
+        # More tokens recalled wins; among equals, the tighter span wins.
+        key = (len(matched), -(matched[-1] - matched[0]))
+        if best_key is None or key > best_key:
+            best_key = key
+            best_matched = matched
+
+    return best_matched
 
 
 def reconcile_phrase(

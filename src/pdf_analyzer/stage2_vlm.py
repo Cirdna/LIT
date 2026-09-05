@@ -13,12 +13,15 @@ fallback.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 
 from .cuad_classes import CUAD_CLASSES
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_QWEN_MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
 DEFAULT_INTERNVL_MODEL_ID = "OpenGVLab/InternVL2_5-8B"
@@ -38,23 +41,45 @@ class VlmPageResult:
 
 
 def _build_prompt() -> str:
+    """Build the per-page CUAD extraction prompt.
+
+    The wording here is load-bearing and was settled empirically against real
+    CUAD contract pages. An earlier version listed the categories, asked for
+    verbatim JSON, and closed with "if nothing is present, return []" — against
+    real pages of the Armstrong Flooring IP Agreement that version returned a
+    bare `[]` every time, for pages that plainly contained a title, named
+    parties, dates, and a governing-law clause. The model could read those
+    pages fine (asked to simply describe one, it transcribed the text
+    correctly), so the failure was one of instruction-following, not vision.
+
+    Two changes fixed it: dropping the trailing "return []" sentence, which a
+    7B model treats as the cheapest way to satisfy the request, and adding a
+    worked example of the output shape. Keep both if you edit this.
+    """
     class_list = "\n".join(f"- {key}: {name}" for key, name in CUAD_CLASSES.items())
-    return f"""You are a contract analysis engine. Examine this contract page image and
-identify any text belonging to the following {len(CUAD_CLASSES)} CUAD clause/entity
-categories:
+    return f"""You are a contract analysis engine reviewing one page of a legal contract.
+
+Extract every piece of text on this page that belongs to any of these {len(CUAD_CLASSES)} CUAD categories:
 
 {class_list}
 
-For each category you find evidence of on THIS page, extract the text VERBATIM
-(reproduce it exactly as it appears in the image, do not paraphrase or summarize)
-along with the clause or section heading it appears under.
+Read the page carefully. Contract pages almost always contain several of these
+categories -- titles, party names, dates, and clause headings all map to
+categories above. Extract each one you can actually see on the page.
 
-Respond with ONLY a JSON array (no markdown fences, no commentary), where each
-element has this exact shape:
-{{"cuad_class": "<snake_case key from the list above>", "vlm_text": "<verbatim extracted text>", "clause_label": "<section/clause heading or short description>"}}
+Copy the text VERBATIM from the image. Do not paraphrase, summarize, or invent text.
 
-If no categories are present on this page, respond with an empty JSON array: []
-"""
+The "cuad_class" value must be one of the snake_case keys listed above, exactly as
+written. Do not invent new category names.
+
+Output format -- a JSON array, nothing else. Example of the exact shape:
+[
+  {{"cuad_class": "document_name", "vlm_text": "SOFTWARE LICENSE AGREEMENT", "clause_label": "Title"}},
+  {{"cuad_class": "parties", "vlm_text": "Initech LLC and Umbrella Corp", "clause_label": "Preamble"}},
+  {{"cuad_class": "governing_law", "vlm_text": "governed by the laws of the State of New York", "clause_label": "Governing Law"}}
+]
+
+Now produce the JSON array for THIS page:"""
 
 
 def _parse_vlm_json(raw_text: str) -> list[VlmClauseExtraction]:
@@ -71,6 +96,10 @@ def _parse_vlm_json(raw_text: str) -> list[VlmClauseExtraction]:
     try:
         items = json.loads(text)
     except json.JSONDecodeError:
+        logger.warning(
+            "VLM output was not parseable as JSON; dropping page result. First 300 chars: %r",
+            raw_text[:300],
+        )
         return []
 
     extractions: list[VlmClauseExtraction] = []
@@ -80,6 +109,11 @@ def _parse_vlm_json(raw_text: str) -> list[VlmClauseExtraction]:
         if not cuad_class or not vlm_text:
             continue
         if cuad_class not in CUAD_CLASSES:
+            # The model does occasionally invent plausible-sounding categories
+            # ("jurisdiction", "waiver_of_jury_trial"). Dropping them keeps the
+            # output schema closed over the 41 real CUAD classes; logging them
+            # keeps that silent filtering visible.
+            logger.debug("Dropping non-CUAD class from VLM output: %r", cuad_class)
             continue
         extractions.append(
             VlmClauseExtraction(
@@ -108,7 +142,14 @@ class VlmBackend(ABC):
 class QwenVLBackend(VlmBackend):
     """Local Qwen2.5-VL inference via `transformers` + `qwen-vl-utils`."""
 
-    def __init__(self, model_id: str = DEFAULT_QWEN_MODEL_ID, device: str | None = None, max_new_tokens: int = 2048):
+    def __init__(
+        self,
+        model_id: str = DEFAULT_QWEN_MODEL_ID,
+        device: str | None = None,
+        max_new_tokens: int = 2048,
+        min_pixels: int = 256 * 28 * 28,
+        max_pixels: int = 1280 * 28 * 28,
+    ):
         import torch
         from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
@@ -116,12 +157,37 @@ class QwenVLBackend(VlmBackend):
         resolved_device = device or ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
         self.device = resolved_device
         self.max_new_tokens = max_new_tokens
+        # A 300 DPI page render (~2550x3300px, ~8.4M pixels) has roughly 8x
+        # more pixels than Qwen2.5-VL's own examples typically use, which
+        # translates into thousands of vision tokens; self-attention over
+        # that many tokens needs an amount of memory quadratic in token
+        # count. Without a flash-attention kernel (MPS and CPU both fall
+        # back to a naive SDPA path that materializes the full attention
+        # matrix), that blows past any reasonable memory budget — this
+        # capped it at ~55GB for a single page on this machine. Capping the
+        # image to a bounded pixel budget here (applied per-image in
+        # qwen_vl_utils.process_vision_info, not just at the processor
+        # level) keeps token count, and therefore memory, bounded regardless
+        # of the source render's DPI.
+        self.min_pixels = min_pixels
+        self.max_pixels = max_pixels
 
-        self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            model_id,
-            torch_dtype="auto",
-            device_map=resolved_device,
-        )
+        if resolved_device == "cuda":
+            # device_map dispatch is safe (and enables multi-GPU sharding) on CUDA.
+            self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                model_id, dtype="auto", device_map=resolved_device
+            )
+        else:
+            # On MPS, transformers' device_map-driven `caching_allocator_warmup`
+            # tries to pre-allocate the whole model as one Metal buffer, which
+            # exceeds MPS's per-allocation size cap and raises "Invalid buffer
+            # size". Loading onto CPU first and moving the whole model to the
+            # target device afterward sidesteps that codepath entirely.
+            self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                model_id,
+                dtype=torch.float16 if resolved_device != "cpu" else torch.float32,
+                low_cpu_mem_usage=True,
+            ).to(resolved_device)
         self.processor = AutoProcessor.from_pretrained(model_id)
 
     def extract_page(self, image_path: Path, page_number: int) -> VlmPageResult:
@@ -131,7 +197,12 @@ class QwenVLBackend(VlmBackend):
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": str(image_path)},
+                    {
+                        "type": "image",
+                        "image": str(image_path),
+                        "min_pixels": self.min_pixels,
+                        "max_pixels": self.max_pixels,
+                    },
                     {"type": "text", "text": _build_prompt()},
                 ],
             }

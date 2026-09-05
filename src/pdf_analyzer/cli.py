@@ -51,6 +51,14 @@ def _build_parser() -> argparse.ArgumentParser:
     analyze.add_argument(
         "--device", default=None, help="Torch device for VLM inference (default: auto-detect)."
     )
+    analyze.add_argument(
+        "--max-pixels",
+        type=int,
+        default=None,
+        help="Qwen backend only: cap on per-image pixel count fed to the VLM (default: "
+        "1280*28*28). Lower this if you hit an MPS/CPU out-of-memory error on generate(); "
+        "raise it (e.g. on a CUDA GPU with flash-attention) for sharper reads of small print.",
+    )
     analyze.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging.")
 
     return parser
@@ -75,6 +83,8 @@ def main(argv: list[str] | None = None) -> int:
         backend_kwargs = {"device": args.device} if args.device else {}
         if args.model_id:
             backend_kwargs["model_id"] = args.model_id
+        if args.max_pixels and args.backend == "qwen":
+            backend_kwargs["max_pixels"] = args.max_pixels
         vlm_backend = build_vlm_backend(args.backend, **backend_kwargs)
 
         output_path = analyze_and_write(
