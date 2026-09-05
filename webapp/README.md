@@ -9,9 +9,15 @@ is the product's one non-negotiable requirement.
 This is the **web application** half. OCR and field extraction are done by a
 separate Python pipeline (the rest of this repo, under `../src/pdf_analyzer`).
 The two halves talk **only** through the database and the `./storage` directory
-— see [`docs/INTEGRATION.md`](docs/INTEGRATION.md). Until the Python worker is
-wired in, a Node **stub worker** produces realistic fake data so the whole
-frontend is buildable and demoable now.
+— see [`docs/INTEGRATION.md`](docs/INTEGRATION.md).
+
+There are **two interchangeable workers**, sharing the same `jobs` table:
+
+- the **real worker** ([`worker/`](worker/), Python) drives the pipeline and
+  produces genuine extractions — run it for real output;
+- a Node **stub worker** ([`scripts/stub-worker.ts`](scripts/stub-worker.ts))
+  produces realistic fake data across every confidence tier, so the whole
+  frontend is buildable and demoable with **no API key**.
 
 ```
 React SPA ──HTTP──▶ Node API (Fastify) ──SQL──▶ PostgreSQL ◀──SQL── Python worker
@@ -48,8 +54,10 @@ npm install
 # 3. Create the schema and seed the workspace + demo corpus
 npm run setup            # prisma generate + db push + seed
 
-# 4. Terminal A — run the stub worker (processes the seeded corpus)
-npm run stub
+# 4. Terminal A — run a worker (processes queued documents)
+npm run stub                       # no-key demo: realistic fake data
+#   …or the REAL worker (genuine extraction; needs OPENROUTER_API_KEY):
+#   pip install -e "..[dev,webapp]" && python -m worker   # see worker/README.md
 
 # 5. Terminal B — run the API
 npm run dev
@@ -59,7 +67,10 @@ cd frontend && npm install && npm run dev
 ```
 
 Open **http://localhost:5173**. The stub worker takes ~1 minute to process the
-eight seeded documents; you'll see live progress in the portfolio.
+eight seeded documents; you'll see live progress in the portfolio. The **real
+worker** ([`worker/`](worker/)) is a drop-in replacement — it claims the same
+jobs and writes the same tables, but runs the `pdf_analyzer` pipeline on real
+uploads. Upload a PDF from the portfolio and it processes end to end.
 
 > Using Prisma migrations instead of `db push`? Run
 > `npm run migrate -- --name init` in place of step 3's `setup`, then
@@ -101,6 +112,7 @@ requirement:
 webapp/
   src/            Fastify API (routes/, lib/), config, Prisma client
   scripts/        stub-worker.ts, corpus.ts, png.ts (dependency-free PNG encoder)
+  worker/         real Python worker: runs pdf_analyzer, writes the DB (mapping.py)
   prisma/         schema.prisma, seed.ts
   frontend/       React + Vite + TS + Tailwind, TanStack Query
   storage/        shared filesystem seam (originals, ocr, pages, tmp)

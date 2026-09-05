@@ -32,35 +32,81 @@ export type AbsenceReason = (typeof ABSENCE_REASONS)[number];
 export const JOB_STATUSES = ["queued", "running", "done", "failed"] as const;
 export const CALENDAR_STATUSES = ["open", "acknowledged", "dismissed"] as const;
 
-// The eight required extractions, grouped exactly as the document-detail screen
-// renders them (§9). Every group is always shown, even when empty.
+// The 41 CUAD categories, organised into the document-detail screen's eight
+// groups (the original seven lifecycle groups + IP & Licensing). Every group is
+// always shown, even when empty. Field keys are the exact CUAD category keys the
+// pipeline emits (see src/pdf_analyzer/cuad_classes.py) so the worker writes
+// them 1:1 with no crosswalk.
 export const FIELD_GROUPS: { key: string; title: string; fields: string[] }[] = [
-  { key: "parties", title: "Parties", fields: ["party_a", "party_b", "signatories"] },
-  { key: "term", title: "Term", fields: ["effective_date", "initial_term", "term_end"] },
+  {
+    key: "parties",
+    title: "Parties",
+    fields: ["document_name", "parties", "governing_law", "third_party_beneficiary"],
+  },
+  {
+    key: "term",
+    title: "Term",
+    fields: ["agreement_date", "effective_date", "expiration_date", "warranty_duration"],
+  },
   {
     key: "renewal",
     title: "Renewal",
-    fields: ["auto_renews", "renewal_term", "notice_period", "notice_deadline"],
+    fields: ["renewal_term", "notice_period_to_terminate_renewal", "post_termination_services"],
   },
   {
     key: "termination",
     title: "Termination",
-    fields: ["termination_for_convenience", "termination_for_cause", "cure_period"],
+    fields: ["termination_for_convenience", "change_of_control", "anti_assignment", "rofr_rofo_rofn"],
   },
   {
     key: "payments",
     title: "Payments",
-    fields: ["payment_amount", "payment_schedule", "escalation"],
+    fields: [
+      "revenue_profit_sharing",
+      "price_restrictions",
+      "minimum_commitment",
+      "volume_restriction",
+      "most_favored_nation",
+    ],
   },
   {
     key: "liability",
     title: "Liability",
-    fields: ["liability_cap", "cap_carve_outs", "indemnities"],
+    fields: [
+      "cap_on_liability",
+      "uncapped_liability",
+      "liquidated_damages",
+      "insurance",
+      "audit_rights",
+      "covenant_not_to_sue",
+    ],
   },
   {
     key: "restrictions",
     title: "Restrictions",
-    fields: ["exclusivity", "non_compete", "non_solicit"],
+    fields: [
+      "non_compete",
+      "exclusivity",
+      "no_solicit_of_customers",
+      "no_solicit_of_employees",
+      "non_disparagement",
+      "competitive_restriction_exception",
+    ],
+  },
+  {
+    key: "ip_licensing",
+    title: "IP & Licensing",
+    fields: [
+      "ip_ownership_assignment",
+      "joint_ip_ownership",
+      "license_grant",
+      "non_transferable_license",
+      "affiliate_license_licensor",
+      "affiliate_license_licensee",
+      "unlimited_all_you_can_eat_license",
+      "irrevocable_or_perpetual_license",
+      "source_code_escrow",
+    ],
   },
 ];
 

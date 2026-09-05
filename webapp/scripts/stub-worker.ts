@@ -270,51 +270,93 @@ type FieldSpec = {
   competing?: string[]; // for the "extraction passes disagree" boundary state
 };
 
+function docTitle(docType: string): string {
+  switch (docType) {
+    case "distribution": return "DISTRIBUTION AGREEMENT";
+    case "nda": return "MUTUAL NON-DISCLOSURE AGREEMENT";
+    case "lease": return "COMMERCIAL LEASE AGREEMENT";
+    case "msa": return "MASTER SERVICES AGREEMENT";
+    case "employment": return "EMPLOYMENT AGREEMENT";
+    default: return "AGREEMENT";
+  }
+}
+
+// Builds all 41 CUAD categories the webapp now displays, grouped exactly as the
+// document-detail screen renders them. Values span every confidence tier and
+// absence reason; profile overrides then layer in the demo scenarios
+// (exclusivity conflict, illegible scan, fabrication signal, inferred covenant).
 function fieldPlan(profile: CorpusProfile, meta: Meta): FieldSpec[] {
   const t = today();
   const effective = addDays(t, -300);
+  const last = meta.pageCount;
   const specs: FieldSpec[] = [];
   const add = (s: FieldSpec) => specs.push(s);
+  const absent = (fieldKey: string, page: number, reason: AbsenceReason = "not_present") =>
+    add({ fieldKey, verbatim: null, normalized: null, tier: "inferred", absence: reason, page });
 
-  // Parties (verbatim, high confidence)
-  add({ fieldKey: "party_a", verbatim: meta.partyA, normalized: null, tier: "verbatim", clause: "Clause 1 (Parties)", page: 1 });
-  add({ fieldKey: "party_b", verbatim: meta.partyB, normalized: null, tier: "verbatim", clause: "Clause 1 (Parties)", page: 1 });
-  add({ fieldKey: "signatories", verbatim: null, normalized: null, tier: "verbatim", absence: "not_found", page: meta.pageCount });
+  // ---- Parties -------------------------------------------------------
+  add({ fieldKey: "document_name", verbatim: docTitle(meta.docType), normalized: null, tier: "verbatim", clause: "Cover page", page: 1 });
+  add({ fieldKey: "parties", verbatim: `${meta.partyA} and ${meta.partyB}`, normalized: null, tier: "verbatim", clause: "Preamble", page: 1 });
+  add({ fieldKey: "governing_law", verbatim: "governed by and construed in accordance with the laws of the Republic of Singapore", normalized: null, tier: "verbatim", clause: "Clause 15.1", page: last });
+  // not_found: searched for, not located (distinct from not_present = confirmed absent).
+  absent("third_party_beneficiary", last, "not_found");
 
-  // Term
+  // ---- Term ----------------------------------------------------------
+  add({ fieldKey: "agreement_date", verbatim: iso(effective), normalized: { date: iso(effective) }, tier: "normalised", clause: "Preamble", page: 1 });
   add({ fieldKey: "effective_date", verbatim: iso(effective), normalized: { date: iso(effective) }, tier: "normalised", clause: "Clause 2.1", page: 1 });
-  add({ fieldKey: "initial_term", verbatim: "twenty-four (24) months", normalized: { months: 24 }, tier: "normalised", clause: "Clause 2.2", page: 1 });
   if (meta.termEnd)
-    add({ fieldKey: "term_end", verbatim: iso(meta.termEnd), normalized: { date: iso(meta.termEnd) }, tier: "normalised", clause: "Clause 2.3", page: 2 });
+    add({ fieldKey: "expiration_date", verbatim: iso(meta.termEnd), normalized: { date: iso(meta.termEnd) }, tier: "normalised", clause: "Clause 2.3", page: 2 });
+  else absent("expiration_date", 2, "not_found");
+  add({ fieldKey: "warranty_duration", verbatim: "warrants the Products for a period of twelve (12) months from delivery", normalized: { months: 12 }, tier: "normalised", clause: "Clause 12.1", page: Math.min(3, last) });
 
-  // Renewal
-  add({ fieldKey: "auto_renews", verbatim: meta.autoRenews ? "renews automatically for successive terms" : "does not renew automatically", normalized: { value: !!meta.autoRenews }, tier: meta.autoRenews ? "verbatim" : "inferred", clause: "Clause 3.1", page: 2 });
+  // ---- Renewal -------------------------------------------------------
   if (meta.autoRenews)
-    add({ fieldKey: "renewal_term", verbatim: "successive twelve (12) month terms", normalized: { months: 12 }, tier: "inferred", clause: "Clause 3.1", page: 2, vlmAgreement: 0.58 });
+    add({ fieldKey: "renewal_term", verbatim: "renews automatically for successive twelve (12) month terms", normalized: { months: 12 }, tier: "verbatim", clause: "Clause 3.1", page: 2 });
+  else absent("renewal_term", 2);
   if (meta.noticePeriodDays)
-    add({ fieldKey: "notice_period", verbatim: `${meta.noticePeriodDays} days' prior written notice`, normalized: { days: meta.noticePeriodDays }, tier: "normalised", clause: "Clause 3.2", page: 2 });
-  if (meta.noticeDeadline)
-    add({ fieldKey: "notice_deadline", verbatim: iso(meta.noticeDeadline), normalized: { date: iso(meta.noticeDeadline) }, tier: "assembled", claim: "computed", clause: "Computed from Clause 3.1 + 3.2", page: 2 });
+    add({ fieldKey: "notice_period_to_terminate_renewal", verbatim: `written notice at least ${meta.noticePeriodDays} days prior to the end of the term`, normalized: { days: meta.noticePeriodDays }, tier: "normalised", clause: "Clause 3.2", page: 2 });
+  else absent("notice_period_to_terminate_renewal", 2);
+  add({ fieldKey: "post_termination_services", verbatim: "shall provide up to sixty (60) days of transition assistance following termination", normalized: null, tier: "verbatim", clause: "Clause 8.4", page: Math.min(3, last) });
 
-  // Termination
-  add({ fieldKey: "termination_for_convenience", verbatim: "either party may terminate on 30 days' notice", normalized: { days: 30 }, tier: "verbatim", clause: "Clause 8.1", page: 3 });
-  add({ fieldKey: "termination_for_cause", verbatim: "on material breach not cured within the cure period", normalized: null, tier: "verbatim", clause: "Clause 8.2", page: 3 });
-  add({ fieldKey: "cure_period", verbatim: "thirty (30) days", normalized: { days: 30 }, tier: "normalised", clause: "Clause 8.2", page: 3 });
+  // ---- Termination ---------------------------------------------------
+  add({ fieldKey: "termination_for_convenience", verbatim: "either party may terminate for convenience upon 30 days' written notice", normalized: null, tier: "verbatim", clause: "Clause 8.1", page: Math.min(3, last) });
+  add({ fieldKey: "change_of_control", verbatim: "either party may terminate upon a change of control of the other party", normalized: null, tier: "verbatim", clause: "Clause 8.3", page: Math.min(3, last) });
+  add({ fieldKey: "anti_assignment", verbatim: "neither party may assign this Agreement without the prior written consent of the other", normalized: null, tier: "verbatim", clause: "Clause 14.2", page: Math.min(3, last) });
+  absent("rofr_rofo_rofn", Math.min(4, last));
 
-  // Payments
-  add({ fieldKey: "payment_amount", verbatim: "S$50,000 per quarter", normalized: { amount: 50000, currency: "SGD" }, tier: "normalised", clause: "Clause 5.1", page: 2 });
-  add({ fieldKey: "payment_schedule", verbatim: "quarterly in advance", normalized: null, tier: "verbatim", clause: "Clause 5.1", page: 2 });
-  add({ fieldKey: "escalation", verbatim: null, normalized: null, tier: "inferred", absence: "not_present", page: 2 });
+  // ---- Payments / commercial ----------------------------------------
+  add({ fieldKey: "revenue_profit_sharing", verbatim: "Distributor shall pay a royalty of five percent (5%) of net sales", normalized: null, tier: "verbatim", clause: "Clause 5.3", page: 2 });
+  absent("price_restrictions", 2);
+  add({ fieldKey: "minimum_commitment", verbatim: "Distributor shall purchase a minimum of S$200,000 of Products per annum", normalized: { amount: 200000, currency: "SGD" }, tier: "normalised", clause: "Clause 5.4", page: 2 });
+  absent("volume_restriction", 2);
+  absent("most_favored_nation", 2);
 
-  // Liability
-  add({ fieldKey: "liability_cap", verbatim: "aggregate liability shall not exceed S$50,000", normalized: { amount: 50000, currency: "SGD" }, tier: "verbatim", clause: "Clause 9.2", page: 3 });
-  add({ fieldKey: "cap_carve_outs", verbatim: "excluding breaches of confidentiality and IP infringement", normalized: null, tier: "assembled", clause: "Clause 9.3", page: 3 });
-  add({ fieldKey: "indemnities", verbatim: "mutual indemnity for third-party claims", normalized: null, tier: "verbatim", clause: "Clause 10.1", page: 3 });
+  // ---- Liability -----------------------------------------------------
+  add({ fieldKey: "cap_on_liability", verbatim: "aggregate liability shall not exceed S$50,000", normalized: { amount: 50000, currency: "SGD" }, tier: "verbatim", clause: "Clause 9.2", page: Math.min(3, last) });
+  add({ fieldKey: "uncapped_liability", verbatim: "liability for breach of confidentiality or IP infringement shall be uncapped", normalized: null, tier: "assembled", clause: "Clause 9.3", page: Math.min(3, last) });
+  absent("liquidated_damages", Math.min(3, last));
+  add({ fieldKey: "insurance", verbatim: "shall maintain commercial general liability insurance of not less than S$1,000,000", normalized: null, tier: "verbatim", clause: "Clause 13.1", page: Math.min(3, last) });
+  add({ fieldKey: "audit_rights", verbatim: "right to audit the books and records upon reasonable prior notice", normalized: null, tier: "verbatim", clause: "Clause 6.1", page: 2 });
+  absent("covenant_not_to_sue", Math.min(3, last));
 
-  // Restrictions
-  add({ fieldKey: "exclusivity", verbatim: null, normalized: null, tier: "inferred", absence: "not_present", page: 4 });
-  add({ fieldKey: "non_compete", verbatim: null, normalized: null, tier: "inferred", absence: "not_present", page: 4 });
-  add({ fieldKey: "non_solicit", verbatim: "no solicitation of employees for 12 months", normalized: { months: 12 }, tier: "normalised", clause: "Clause 11.2", page: 4 });
+  // ---- Restrictions --------------------------------------------------
+  absent("non_compete", Math.min(4, last));
+  absent("exclusivity", 2); // overridden for the distribution agreements below
+  absent("no_solicit_of_customers", Math.min(4, last));
+  add({ fieldKey: "no_solicit_of_employees", verbatim: "shall not solicit or hire any employee of the other party for twelve (12) months", normalized: { months: 12 }, tier: "verbatim", clause: "Clause 11.2", page: Math.min(4, last) });
+  absent("non_disparagement", Math.min(4, last));
+  add({ fieldKey: "competitive_restriction_exception", verbatim: "nothing herein shall prevent ordinary-course dealings with existing customers", normalized: null, tier: "inferred", clause: "Clause 11.3", page: Math.min(4, last) });
+
+  // ---- IP & Licensing ------------------------------------------------
+  add({ fieldKey: "ip_ownership_assignment", verbatim: "all work product shall be the sole and exclusive property of the Company", normalized: null, tier: "verbatim", clause: "Clause 7.1", page: 2 });
+  absent("joint_ip_ownership", 2);
+  add({ fieldKey: "license_grant", verbatim: "Licensor hereby grants a non-exclusive license to use the Marks", normalized: null, tier: "verbatim", clause: "Clause 4.2", page: 2 });
+  add({ fieldKey: "non_transferable_license", verbatim: "the license is personal to the licensee and non-transferable", normalized: null, tier: "verbatim", clause: "Clause 4.3", page: 2 });
+  absent("affiliate_license_licensor", 2);
+  absent("affiliate_license_licensee", 2);
+  absent("unlimited_all_you_can_eat_license", 2);
+  absent("irrevocable_or_perpetual_license", 2);
+  absent("source_code_escrow", Math.min(3, last));
 
   // ---- profile-specific overrides -------------------------------------
   const set = (key: string, patch: Partial<FieldSpec>) => {
@@ -325,30 +367,33 @@ function fieldPlan(profile: CorpusProfile, meta: Meta): FieldSpec[] {
   if (profile === "distribution_acme") {
     set("exclusivity", { verbatim: "Distributor is granted EXCLUSIVE rights to distribute the Products in Singapore", normalized: { territory: "Singapore", exclusive: true }, tier: "verbatim", absence: undefined, clause: "Clause 4.1", page: 2 });
     // A benchmark claim — explicitly OUR reference range, not a statement of law.
-    add({ fieldKey: "notice_period", verbatim: null, normalized: { assessment: "within", reference_range: "30–90 days" }, tier: "inferred", claim: "benchmark", clause: undefined, page: 2 });
+    set("minimum_commitment", { verbatim: null, normalized: { assessment: "typical", reference_range: "S$150k–250k per annum" }, tier: "inferred", claim: "benchmark", absence: undefined, clause: undefined, page: 2 });
   }
   if (profile === "distribution_borden") {
     set("exclusivity", { verbatim: "Distributor may distribute the Products in Singapore and Malaysia on a non-exclusive basis", normalized: { territory: "Singapore", exclusive: false }, tier: "verbatim", absence: undefined, clause: "Clause 2.3", page: 2 });
   }
   if (profile === "nda_overdue") {
-    set("payment_amount", { verbatim: null, normalized: null, tier: "inferred", absence: "not_present", clause: undefined });
-    set("liability_cap", { verbatim: null, normalized: null, tier: "inferred", absence: "not_present", clause: undefined });
+    // An NDA carries few commercial terms — mark the money clauses genuinely absent.
+    set("revenue_profit_sharing", { verbatim: null, normalized: null, tier: "inferred", absence: "not_present", clause: undefined });
+    set("minimum_commitment", { verbatim: null, normalized: null, tier: "inferred", absence: "not_present", clause: undefined });
+    set("cap_on_liability", { verbatim: null, normalized: null, tier: "inferred", absence: "not_present", clause: undefined });
+    set("license_grant", { verbatim: null, normalized: null, tier: "inferred", absence: "not_present", clause: undefined });
   }
   if (profile === "lease_scanned_illegible") {
-    // A field on the illegible page — the value cannot be read.
-    set("payment_amount", { verbatim: null, normalized: null, tier: "unverified", absence: "illegible", clause: "Clause 5.1 (page 3)", page: 3 });
-    set("liability_cap", { verbatim: "S$??,000", normalized: null, tier: "unverified", clause: "Clause 9.2 (page 3)", page: 3, consistency: 0.3 });
+    // Fields on the illegible page — the values cannot be read.
+    set("cap_on_liability", { verbatim: null, normalized: null, tier: "unverified", absence: "illegible", clause: "Clause 9.2 (page 3)", page: 3 });
+    set("insurance", { verbatim: "S$?,000,000 general liability", normalized: null, tier: "unverified", clause: "Clause 13.1 (page 3)", page: 3, consistency: 0.3 });
   }
   if (profile === "msa_unverified") {
     // Assembled from two places, and one outright fabrication signal.
-    set("liability_cap", { verbatim: "aggregate liability shall not exceed S$50,000", normalized: { amount: 50000, currency: "SGD" }, tier: "assembled", clause: "Clause 9.2 + Schedule 3", page: 3, consistency: 0.66 });
-    set("cap_carve_outs", { verbatim: "unlimited liability for data breaches under Schedule 5", normalized: null, tier: "unverified", clause: "Clause 9.4", page: 3, consistency: 0.18, vlmAgreement: 0.2 });
+    set("cap_on_liability", { verbatim: "aggregate liability shall not exceed S$50,000", normalized: { amount: 50000, currency: "SGD" }, tier: "assembled", clause: "Clause 9.2 + Schedule 3", page: Math.min(3, last), consistency: 0.66 });
+    set("uncapped_liability", { verbatim: "unlimited liability for data breaches under Schedule 5", normalized: null, tier: "unverified", clause: "Clause 9.4", page: Math.min(3, last), consistency: 0.18, vlmAgreement: 0.2 });
     // extraction passes disagree materially
-    set("payment_amount", { verbatim: "S$120,000 per annum", normalized: { amount: 120000, currency: "SGD" }, tier: "assembled", clause: "Clause 5.1", page: 2, consistency: 0.44, competing: ["S$120,000 per annum", "S$12,000 per month"] });
+    set("revenue_profit_sharing", { verbatim: "S$120,000 per annum", normalized: { amount: 120000, currency: "SGD" }, tier: "assembled", clause: "Clause 5.1", page: 2, consistency: 0.44, competing: ["S$120,000 per annum", "S$12,000 per month"] });
   }
   if (profile === "employment_inferred") {
-    set("non_compete", { verbatim: "shall not engage in a competing business for 6 months post-termination", normalized: { months: 6 }, tier: "inferred", absence: undefined, clause: "Clause 11.1", page: 3, vlmAgreement: 0.55 });
-    set("payment_amount", { verbatim: "S$8,500 gross per month", normalized: { amount: 8500, currency: "SGD" }, tier: "normalised", clause: "Clause 5.1", page: 2 });
+    set("non_compete", { verbatim: "shall not engage in a competing business for 6 months post-termination", normalized: { months: 6 }, tier: "inferred", absence: undefined, clause: "Clause 11.1", page: Math.min(3, last), vlmAgreement: 0.55 });
+    set("revenue_profit_sharing", { verbatim: "S$8,500 gross per month", normalized: { amount: 8500, currency: "SGD" }, tier: "normalised", absence: undefined, clause: "Clause 5.1", page: 2 });
   }
 
   return specs;

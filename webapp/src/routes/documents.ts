@@ -179,7 +179,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         select: { documentId: true, eventDate: true, actionByDate: true },
       }),
       prisma.extractedField.findMany({
-        where: { documentId: { in: ids }, fieldKey: "term_end" },
+        where: { documentId: { in: ids }, fieldKey: "expiration_date" },
         select: { documentId: true, valueNormalized: true, valueVerbatim: true },
       }),
       prisma.extractedField.findMany({

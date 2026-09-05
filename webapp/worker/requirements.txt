@@ -1,0 +1,10 @@
+# The real worker = the pdf_analyzer pipeline + a psycopg DB writer.
+#
+# 1. Install the pipeline itself from the repo root (brings pymupdf, pytesseract,
+#    pillow, rapidfuzz, pydantic, requests, playwright):
+#        pip install -e ".[dev]"
+# 2. Then install this worker's only extra dependency:
+#        pip install -r webapp/worker/requirements.txt
+#
+# psycopg[binary] ships a prebuilt libpq so no system Postgres headers are needed.
+psycopg[binary]>=3.1

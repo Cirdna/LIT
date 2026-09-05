@@ -4,7 +4,12 @@ This is the seam. **Node and Python never call each other.** They communicate
 only through the PostgreSQL database and the shared `./storage` directory. Either
 side can be developed, restarted, or replaced independently. The stub worker
 ([`scripts/stub-worker.ts`](../scripts/stub-worker.ts)) and the real Python
-worker are interchangeable with no API changes.
+worker ([`worker/`](../worker/), which drives the `pdf_analyzer` pipeline) are
+interchangeable with no API changes.
+
+> **The real worker is built.** See [`worker/README.md`](../worker/README.md).
+> This document is the contract it implements; the notes below record how the
+> pipeline's CUAD output is mapped onto this schema.
 
 - **Everything the pipeline writes is a fact about a document** (pages, lines,
   fields, calendar events, status).
@@ -145,3 +150,36 @@ tripped, it should also write a `handoff_briefs` row with a **specific** questio
 naming the clauses — see [`src/lib/handoff.ts`](../src/lib/handoff.ts) for the
 shape Node expects in `established` (an array of
 `{label, detail, citation, confidenceTier}`).
+
+> **Not yet wired in the real worker.** `pdf_analyzer/conflict.py` exists but is
+> unfed — no stage populates the entity-resolution / structured-clause data it
+> needs (HANDOFF.md §6.5). Rather than fabricate conflicts, the real worker
+> writes none; the stub worker still demonstrates the flow. Building
+> entity resolution is the unblocking step.
+
+## 9. How the real worker fills this schema
+
+The webapp displays the pipeline's own vocabulary: **all 41 CUAD categories**,
+grouped into eight sections (see [`src/lib/domain.ts`](../src/lib/domain.ts)).
+[`worker/mapping.py`](../worker/mapping.py) is therefore a direct projection —
+one `extracted_fields` row per category, `field_key` = the CUAD key — not a
+crosswalk. Details in [`worker/README.md`](../worker/README.md). The tier rules:
+
+| Pipeline signal | `confidence_tier` |
+|---|---|
+| Grounded quote (`is_grounded`), left as text | `verbatim` |
+| Grounded date/duration category, parsed | `normalised` |
+| Present but the quote was **not** found on the page | `unverified` |
+| No extraction on the page for this category | value `NULL` + `absence_reason='not_found'` |
+
+Only date/duration categories carry a `value_normalized` (`agreement_date`,
+`effective_date`, `expiration_date` → `{date}`; `renewal_term`,
+`warranty_duration` → `{months}`; `notice_period_to_terminate_renewal` →
+`{days}`). The calendar is computed from those. Every other category is a
+grounded clause quote or an explicit absence.
+
+Bounding boxes: the pipeline works in `bbox_1000` (0–1000, normalized to the
+page's pixel size at render DPI); the worker converts every line envelope to
+**PDF points** for `text_lines.bbox`, sets `document_pages.image_dpi` to the
+render DPI, and resolves each field's `anchor_line_ids` by intersecting its
+`bbox_1000` with the page's lines.
