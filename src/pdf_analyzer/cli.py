@@ -13,7 +13,14 @@ import sys
 from pathlib import Path
 
 from .pipeline import analyze_and_write
-from .stage2_vlm import DEFAULT_INTERNVL_MODEL_ID, DEFAULT_QWEN_MODEL_ID, build_vlm_backend
+from .stage2_vlm import (
+    BACKENDS,
+    DEFAULT_INTERNVL_MODEL_ID,
+    DEFAULT_OPENROUTER_MODEL_ID,
+    DEFAULT_QWEN_MODEL_ID,
+    OpenRouterError,
+    build_vlm_backend,
+)
 from .stage3_reconcile import VERIFICATION_THRESHOLD
 
 
@@ -40,16 +47,28 @@ def _build_parser() -> argparse.ArgumentParser:
         help=f"Verification match-score threshold, 0-100 (default: {VERIFICATION_THRESHOLD}).",
     )
     analyze.add_argument(
-        "--backend", choices=["qwen", "internvl"], default="qwen", help="VLM backend to use."
+        "--backend",
+        choices=list(BACKENDS),
+        default="openrouter",
+        help="VLM backend (default: openrouter, a hosted model; 'qwen'/'internvl' run locally).",
     )
     analyze.add_argument(
         "--model-id",
         default=None,
-        help=f"Override the VLM model id (defaults: qwen={DEFAULT_QWEN_MODEL_ID}, "
-        f"internvl={DEFAULT_INTERNVL_MODEL_ID}).",
+        help=f"Override the VLM model id (defaults: openrouter={DEFAULT_OPENROUTER_MODEL_ID}, "
+        f"qwen={DEFAULT_QWEN_MODEL_ID}, internvl={DEFAULT_INTERNVL_MODEL_ID}). Any "
+        "vision-capable slug from https://openrouter.ai/models works.",
     )
     analyze.add_argument(
-        "--device", default=None, help="Torch device for VLM inference (default: auto-detect)."
+        "--device",
+        default=None,
+        help="Local backends only: torch device for inference (default: auto-detect).",
+    )
+    analyze.add_argument(
+        "--concurrency",
+        type=int,
+        default=None,
+        help="OpenRouter only: pages processed in parallel (default: 4).",
     )
     analyze.add_argument(
         "--max-pixels",
@@ -80,12 +99,23 @@ def main(argv: list[str] | None = None) -> int:
 
         work_dir = args.work_dir or args.output.with_suffix("").with_name(args.output.stem + ".work")
 
-        backend_kwargs = {"device": args.device} if args.device else {}
+        backend_kwargs = {}
         if args.model_id:
             backend_kwargs["model_id"] = args.model_id
-        if args.max_pixels and args.backend == "qwen":
-            backend_kwargs["max_pixels"] = args.max_pixels
-        vlm_backend = build_vlm_backend(args.backend, **backend_kwargs)
+        if args.backend == "openrouter":
+            if args.concurrency:
+                backend_kwargs["concurrency"] = args.concurrency
+        else:
+            if args.device:
+                backend_kwargs["device"] = args.device
+            if args.max_pixels and args.backend == "qwen":
+                backend_kwargs["max_pixels"] = args.max_pixels
+
+        try:
+            vlm_backend = build_vlm_backend(args.backend, **backend_kwargs)
+        except OpenRouterError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
 
         output_path = analyze_and_write(
             input_path=args.input,

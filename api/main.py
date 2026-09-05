@@ -6,12 +6,14 @@ Endpoints:
   GET  /jobs/{job_id}/pdf - serve the standardized PDF for the frontend viewer
 
 Run with: uvicorn api.main:app --reload
-(requires `pip install -e .` from the repo root first, so `pdf_analyzer` is importable)
+(requires `pip install -e .` first, and OPENROUTER_API_KEY set for the default backend.
+ Override with PDF_ANALYZER_BACKEND / PDF_ANALYZER_MODEL_ID.)
 """
 
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import uuid
 from pathlib import Path
@@ -40,10 +42,15 @@ _jobs: dict[str, dict] = {}
 _vlm_backend = None  # lazily constructed on first job, since it loads model weights
 
 
+VLM_BACKEND = os.environ.get("PDF_ANALYZER_BACKEND", "openrouter")
+VLM_MODEL_ID = os.environ.get("PDF_ANALYZER_MODEL_ID")
+
+
 def _get_vlm_backend():
     global _vlm_backend
     if _vlm_backend is None:
-        _vlm_backend = build_vlm_backend("qwen")
+        kwargs = {"model_id": VLM_MODEL_ID} if VLM_MODEL_ID else {}
+        _vlm_backend = build_vlm_backend(VLM_BACKEND, **kwargs)
     return _vlm_backend
 
 

@@ -22,3 +22,4 @@ frontend/dist/
 .cache/
 *.safetensors
 *.bin
+.env

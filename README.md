@@ -42,6 +42,21 @@ pip install -e ".[dev]"
 playwright install chromium     # HTML -> PDF conversion
 ```
 
+The local VLM backends need ~2.5GB of extra wheels and are optional — install
+them only if you want to run `--backend qwen` / `--backend internvl`:
+
+```bash
+pip install -e ".[local]"
+```
+
+### API key (default backend)
+
+Stage 2 defaults to a hosted model over OpenRouter:
+
+```bash
+export OPENROUTER_API_KEY=sk-or-...     # https://openrouter.ai/keys
+```
+
 ### Frontend
 
 ```bash
@@ -62,24 +77,44 @@ CLI (no server needed):
 
 ```bash
 python -m pdf_analyzer.cli analyze contract.docx --output result.json
+
+# local instead of hosted (needs `pip install -e ".[local]"`):
+python -m pdf_analyzer.cli analyze contract.pdf --backend qwen --device mps
 ```
 
 Or full stack: start the API (`uvicorn api.main:app`) and the frontend
-(`npm run dev` in `frontend/`), then upload a document in the browser UI.
+(`npm run dev` in `frontend/`), then upload a document in the browser UI. The
+API's backend is set via `PDF_ANALYZER_BACKEND` / `PDF_ANALYZER_MODEL_ID`
+env vars, defaulting to OpenRouter.
 
-## VLM hardware notes
+## VLM backend choice
 
-Qwen2.5-VL-7B-Instruct (the default) needs a GPU with real VRAM (CUDA) or
-enough Apple-silicon unified memory (MPS) to be usable — expect it to be very
-slow or to fail to load with `device_map="cpu"` on a machine without either.
-Two ways to shrink the footprint:
+Three backends behind one `VlmBackend` interface
+([`stage2_vlm.py`](src/pdf_analyzer/stage2_vlm.py)), swappable without
+touching Stage 3 reconciliation or the output schema:
 
-- `--model-id Qwen/Qwen2.5-VL-3B-Instruct` — smaller Qwen checkpoint.
-- `--backend internvl --model-id OpenGVLab/InternVL2_5-2B` — smaller InternVL checkpoint.
+| backend | model | needs | pages processed |
+|---|---|---|---|
+| `openrouter` (default) | any vision-capable slug, default `anthropic/claude-sonnet-5` | `OPENROUTER_API_KEY` | concurrently (default 4) |
+| `qwen` | Qwen2.5-VL-7B-Instruct | `pip install -e ".[local]"` + a GPU | serially |
+| `internvl` | InternVL2_5-8B | `pip install -e ".[local]"` + a GPU | serially |
 
-Both backends implement the same `VlmBackend` interface
-([`stage2_vlm.py`](src/pdf_analyzer/stage2_vlm.py)), so swapping models/backends
-never touches Stage 3 reconciliation or the output schema.
+**The local backends were the pipeline's accuracy bottleneck, not just slow.**
+Scored against expert annotations of a real 40-page CUAD contract
+(Armstrong Flooring IP Agreement, in `tests/sample_data/`), Qwen2.5-VL-7B
+missed clauses whose exact text was sitting in the OCR word array
+(non-disparagement, IP assignment, covenant-not-to-sue), filed others under
+the wrong CUAD category, and on some pages gave up and enumerated all 41
+categories with `"not specified"` placeholders instead of reading the page.
+Stages 1, 2a (OCR), 3 (reconciliation) and 4 (schema) were all doing their
+jobs correctly — the semantic layer was the failure, and a 20-page run took
+~84 minutes on an M4 to get those wrong answers. That's why hosted is now
+the default rather than an alternative.
+
+If you do need the local path (offline, cost, data residency), smaller
+checkpoints reduce the footprint: `--model-id Qwen/Qwen2.5-VL-3B-Instruct`
+or `--backend internvl --model-id OpenGVLab/InternVL2_5-2B` — but expect the
+same accuracy ceiling, since it wasn't a sizing problem.
 
 ## Tests
 

@@ -2,20 +2,37 @@
 against the 41 CUAD classes, extracting verbatim target clauses and key
 entities.
 
-Backed by a local open-weight vision-language model (default: Qwen2.5-VL via
-`transformers`). This runs real local inference — no external API calls —
-per the gameplan's [Qwen2.5-VL / InternVL] pipeline box. Local inference of
-a 7B+ VLM is slow/impractical without a CUDA or MPS-capable GPU with enough
-VRAM/unified memory; see README for hardware notes and a smaller-model
-fallback.
+Three interchangeable backends behind one `VlmBackend` interface:
+
+  openrouter -- a hosted frontier model over the OpenRouter API (default).
+  qwen       -- local Qwen2.5-VL via `transformers`.
+  internvl   -- local InternVL via `transformers`.
+
+The default is hosted because the local 7B models proved to be the
+pipeline's accuracy bottleneck on real contracts. Scored against expert
+annotations of the Armstrong Flooring IP Agreement, Qwen2.5-VL-7B missed
+clauses whose text was demonstrably present in the OCR word array
+(non-disparagement, IP assignment, covenant-not-to-sue), filed others under
+the wrong category, and on some pages enumerated all 41 categories with
+"not specified" placeholders instead of reading the page. Stages 1, 2a, 3
+and 4 were all doing their jobs; only the semantic layer was failing.
+
+Local inference of a 7B+ VLM also needs a CUDA or MPS-capable GPU to be
+practical — a 20-page contract took ~84 minutes on an M4 — whereas the
+hosted path runs pages concurrently in seconds each.
 """
 
 from __future__ import annotations
 
+import base64
+import io
 import json
 import logging
+import os
 import re
+import time
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +42,11 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_QWEN_MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
 DEFAULT_INTERNVL_MODEL_ID = "OpenGVLab/InternVL2_5-8B"
+
+# Any vision-capable OpenRouter model slug works; override with --model-id.
+# See https://openrouter.ai/models for the current catalogue.
+DEFAULT_OPENROUTER_MODEL_ID = "anthropic/claude-sonnet-5"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 @dataclass
@@ -126,17 +148,177 @@ def _parse_vlm_json(raw_text: str) -> list[VlmClauseExtraction]:
 
 
 class VlmBackend(ABC):
-    """Common interface so the pipeline can swap Qwen2.5-VL <-> InternVL
-    (or any other VLM) without touching Stage 3 reconciliation."""
+    """Common interface so the pipeline can swap hosted <-> local models
+    without touching Stage 3 reconciliation or the output schema."""
+
+    #: Pages processed concurrently. Local backends hold a single model on one
+    #: device and must stay serial; network-bound backends override this.
+    concurrency = 1
 
     @abstractmethod
     def extract_page(self, image_path: Path, page_number: int) -> VlmPageResult: ...
 
     def extract_document(self, page_image_paths: dict[int, Path]) -> dict[int, VlmPageResult]:
-        return {
-            page_number: self.extract_page(path, page_number)
-            for page_number, path in page_image_paths.items()
+        if self.concurrency <= 1:
+            return {
+                page_number: self.extract_page(path, page_number)
+                for page_number, path in page_image_paths.items()
+            }
+
+        items = sorted(page_image_paths.items())
+        with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
+            results = pool.map(lambda kv: (kv[0], self.extract_page(kv[1], kv[0])), items)
+            return dict(results)
+
+
+class OpenRouterError(RuntimeError):
+    """Raised when OpenRouter cannot be reached or refuses the request."""
+
+
+class OpenRouterBackend(VlmBackend):
+    """Hosted VLM via the OpenRouter API (OpenAI-compatible chat completions).
+
+    Page images are sent inline as base64 data URIs. The API key is read from
+    the OPENROUTER_API_KEY environment variable and never logged.
+    """
+
+    def __init__(
+        self,
+        model_id: str = DEFAULT_OPENROUTER_MODEL_ID,
+        api_key: str | None = None,
+        max_new_tokens: int = 4096,
+        max_image_edge: int = 1600,
+        timeout: float = 180.0,
+        max_retries: int = 4,
+        concurrency: int = 4,
+        site_url: str | None = None,
+        app_name: str = "pdf-contract-analyzer",
+    ):
+        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
+        if not self.api_key:
+            raise OpenRouterError(
+                "No OpenRouter API key. Set OPENROUTER_API_KEY in the environment "
+                "or pass api_key=... . Get one at https://openrouter.ai/keys"
+            )
+        self.model_id = model_id
+        self.max_new_tokens = max_new_tokens
+        self.max_image_edge = max_image_edge
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.concurrency = concurrency
+        self.site_url = site_url
+        self.app_name = app_name
+
+    def _headers(self) -> dict:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "X-Title": self.app_name,
         }
+        if self.site_url:
+            headers["HTTP-Referer"] = self.site_url
+        return headers
+
+    def _encode_image(self, image_path: Path) -> str:
+        """Downscale the 300 DPI render and return a base64 PNG data URI.
+
+        Pages are rendered at 300 DPI for OCR's benefit, which is far more
+        resolution than a hosted VLM needs and inflates both payload size and
+        token cost. Capping the long edge keeps contract body text legible
+        while keeping requests small. PNG rather than JPEG, since JPEG
+        ringing around small serif text is exactly the wrong tradeoff here.
+        """
+        from PIL import Image
+
+        with Image.open(image_path) as img:
+            img = img.convert("RGB")
+            longest = max(img.size)
+            if longest > self.max_image_edge:
+                scale = self.max_image_edge / longest
+                new_size = (max(1, int(img.width * scale)), max(1, int(img.height * scale)))
+                img = img.resize(new_size, Image.LANCZOS)
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG", optimize=True)
+
+        encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+        return f"data:image/png;base64,{encoded}"
+
+    def _post(self, payload: dict) -> dict:
+        import requests
+
+        last_error = None
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(
+                    OPENROUTER_URL,
+                    headers=self._headers(),
+                    json=payload,
+                    timeout=self.timeout,
+                )
+            except requests.RequestException as exc:
+                last_error = f"network error: {exc}"
+            else:
+                if response.status_code == 200:
+                    return response.json()
+
+                # 429 and 5xx are transient; anything else is a request
+                # problem that retrying will not fix (bad key, unknown model,
+                # image too large), so fail fast with the server's reason.
+                if response.status_code not in (429, 500, 502, 503, 504):
+                    raise OpenRouterError(
+                        f"OpenRouter returned {response.status_code}: {response.text[:400]}"
+                        + (
+                            f"\nCheck that '{self.model_id}' is a valid vision-capable slug "
+                            "at https://openrouter.ai/models"
+                            if response.status_code in (400, 404)
+                            else ""
+                        )
+                    )
+                last_error = f"HTTP {response.status_code}: {response.text[:200]}"
+
+            backoff = 2**attempt
+            logger.warning(
+                "OpenRouter attempt %d/%d failed (%s); retrying in %ds",
+                attempt + 1,
+                self.max_retries,
+                last_error,
+                backoff,
+            )
+            time.sleep(backoff)
+
+        raise OpenRouterError(f"OpenRouter failed after {self.max_retries} attempts: {last_error}")
+
+    def extract_page(self, image_path: Path, page_number: int) -> VlmPageResult:
+        payload = {
+            "model": self.model_id,
+            "max_tokens": self.max_new_tokens,
+            "temperature": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": _build_prompt()},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": self._encode_image(image_path)},
+                        },
+                    ],
+                }
+            ],
+        }
+
+        data = self._post(payload)
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError) as exc:
+            raise OpenRouterError(f"Unexpected OpenRouter response shape: {str(data)[:400]}") from exc
+
+        if isinstance(content, list):  # some models return content parts
+            content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+
+        extractions = _parse_vlm_json(content)
+        logger.info("page %d: %d extractions from %s", page_number, len(extractions), self.model_id)
+        return VlmPageResult(page_number=page_number, extractions=extractions)
 
 
 class QwenVLBackend(VlmBackend):
@@ -273,9 +455,14 @@ class InternVLBackend(VlmBackend):
         return VlmPageResult(page_number=page_number, extractions=extractions)
 
 
-def build_vlm_backend(backend: str = "qwen", **kwargs) -> VlmBackend:
+BACKENDS = ("openrouter", "qwen", "internvl")
+
+
+def build_vlm_backend(backend: str = "openrouter", **kwargs) -> VlmBackend:
+    if backend == "openrouter":
+        return OpenRouterBackend(**kwargs)
     if backend == "qwen":
         return QwenVLBackend(**kwargs)
     if backend == "internvl":
         return InternVLBackend(**kwargs)
-    raise ValueError(f"Unknown VLM backend: {backend!r} (expected 'qwen' or 'internvl')")
+    raise ValueError(f"Unknown VLM backend: {backend!r} (expected one of {BACKENDS})")
