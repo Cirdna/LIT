@@ -108,7 +108,9 @@ def test_reconcile_phrase_out_of_order_tokens_do_not_falsely_anchor():
     match = reconcile_phrase("California of the", page)
     assert match is not None
     # "California" anchors first; cursor then can't walk back to find "of"/"the" before it.
-    assert match.match_score == pytest.approx(100.0 / 3.0)
+    # Asserted on recall, which isolates alignment from the evidence-mass
+    # weighting applied to the final score.
+    assert match.recall == pytest.approx(100.0 / 3.0)
 
 
 def _page_of_words(tokens, page_number=1, y=100, width_px=2550, height_px=3300):
@@ -136,8 +138,11 @@ def test_phrase_far_down_the_page_is_still_found():
     match = reconcile_phrase("Counterparts.", page)
 
     assert match is not None
-    assert match.match_score == pytest.approx(100.0)
-    assert match.is_verified
+    # The bug under test is one of *location*, so assert the phrase was found
+    # at all. The final score is separately discounted here because a lone
+    # short token carries little distinguishing evidence (see the
+    # evidence-mass tests below).
+    assert match.recall == pytest.approx(100.0)
     assert match.matched_text == "Counterparts."
 
 
@@ -159,3 +164,47 @@ def test_best_occurrence_wins_over_first_superficial_match():
     assert "Delaware" in match.matched_text
     # Must have anchored past the decoy, not on it.
     assert "amended" not in match.matched_text
+
+
+def test_common_word_phrase_is_discounted_despite_full_recall():
+    """Regression: recall alone can't tell a real match from a spurious one.
+
+    A short phrase built from words that are ubiquitous on the page recalls
+    100% of its own tokens off unrelated text, because recall normalizes by
+    the phrase itself. Observed on a real contract page, where the phrase
+    'Arizona and Company' scored a perfect 1.00 against a span reading
+    'Arizona Copyright Grant. Subject to the terms and conditions...'.
+    Scaling by evidence mass must pull such a match below verification.
+    """
+    # "arizona" / "company" / "and" recur constantly, as a defined party name
+    # does throughout a real contract.
+    boilerplate = []
+    for _ in range(30):
+        boilerplate += ["Arizona", "and", "the", "Company", "shall", "provide"]
+    page = _page_of_words(boilerplate)
+
+    match = reconcile_phrase("Arizona and Company", page)
+
+    assert match is not None
+    assert match.recall == pytest.approx(100.0)  # every token found...
+    assert match.evidence_mass < 2.0  # ...but they carry almost no information
+    assert not match.is_verified
+
+
+def test_distinctive_phrase_keeps_full_score():
+    """The counterpart to the test above: a phrase carrying genuinely rare
+    tokens must still verify at full strength, so the discount targets
+    uninformative phrases rather than penalizing length or filler words."""
+    page = _page_of_words(
+        "This Agreement shall be governed by the laws of the State of Delaware, "
+        "its rules of conflict of laws notwithstanding.".split()
+    )
+
+    match = reconcile_phrase(
+        "governed by the laws of the State of Delaware notwithstanding", page
+    )
+
+    assert match is not None
+    assert match.evidence_mass >= 2.0
+    assert match.match_score == pytest.approx(match.recall)  # undiscounted
+    assert match.is_verified

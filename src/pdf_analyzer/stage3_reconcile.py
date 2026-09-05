@@ -37,7 +37,9 @@ verbatim sentence rather than just the sparse matched words.
 
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 from dataclasses import dataclass
 
 from rapidfuzz import fuzz
@@ -46,6 +48,14 @@ from .stage2_ocr import OcrPageResult, OcrWord
 
 VERIFICATION_THRESHOLD = 85.0
 _NORM_GRID = 1000.0
+
+# Minimum "evidence mass" (see _evidence_mass) for a match to be scored at
+# full strength. Below this the score is scaled down proportionally, because
+# the phrase did not carry enough distinctive text to pin down a location.
+# Expressed in units of fully-distinctive tokens: ~2 means "a couple of words
+# that are rare on this page", which a date or a proper name clears but a
+# short phrase of page-ubiquitous words does not.
+_MIN_EVIDENCE_MASS = 2.0
 
 # How far ahead (in OCR words) to search for the next phrase token once the
 # previous one has been anchored. Bounded so a single stray match early in a
@@ -67,11 +77,45 @@ _PUNCT_RE = re.compile(r"[^\w]+")
 @dataclass
 class SpatialMatch:
     matched_text: str  # verbatim OCR text spanning the first->last anchored token
-    match_score: float  # 0-100, fraction of phrase tokens successfully anchored
+    match_score: float  # 0-100, recall scaled by evidence mass (see reconcile_phrase)
     is_verified: bool
     bbox_1000: list[float]  # [x_min, y_min, x_max, y_max] on the 0-1000 grid
     bbox_pixels: list[float]  # same box in source pixel coordinates
     matched_words: list[OcrWord]
+    recall: float = 0.0  # 0-100, fraction of phrase tokens anchored
+    evidence_mass: float = 0.0  # distinctiveness of the anchored tokens
+
+
+def _token_weight(token: str, counts: Counter, n_words: int) -> float:
+    """Distinctiveness of `token` on this page, normalized to roughly [0, 1].
+
+    Standard IDF, divided by log(n_words) so the scale doesn't depend on page
+    length: a token occurring once scores near 1.0, one occurring on every
+    other line scores near 0. Page-relative frequency is the right reference
+    here because a term can be globally rare yet ubiquitous in one contract
+    (this corpus defines "Arizona" as a party name and then uses it in nearly
+    every clause), and such a term is useless for pinning down a location.
+    """
+    if n_words <= 1:
+        return 1.0
+    denominator = math.log(n_words)
+    if denominator <= 0:
+        return 1.0
+    weight = math.log(n_words / (1 + counts.get(token, 0))) / denominator
+    return max(0.0, min(1.0, weight))
+
+
+def _evidence_mass(tokens: list[str], counts: Counter, n_words: int) -> float:
+    """Total distinctiveness carried by `tokens`, in units of "fully rare" words.
+
+    This is deliberately an absolute sum rather than a ratio. Recall alone
+    cannot tell a real match from a spurious one: a phrase built entirely of
+    common words ("Arizona and Company") recalls 100% of its own tokens off
+    an unrelated span, because recall normalizes by the phrase itself. Summing
+    absolute distinctiveness instead asks the different, correct question --
+    "was there enough rare text here to identify a location at all?"
+    """
+    return sum(_token_weight(t, counts, n_words) for t in tokens)
 
 
 def normalize_point(x_px: float, y_px: float, width_px: int, height_px: int) -> tuple[float, float]:
@@ -212,7 +256,7 @@ def reconcile_phrase(
         return None
 
     matched_indices = _align_tokens(phrase_tokens, page_ocr.words)
-    match_score = 100.0 * len(matched_indices) / len(phrase_tokens)
+    recall = 100.0 * len(matched_indices) / len(phrase_tokens)
 
     if not matched_indices:
         return SpatialMatch(
@@ -222,7 +266,21 @@ def reconcile_phrase(
             bbox_1000=[0.0, 0.0, 0.0, 0.0],
             bbox_pixels=[0.0, 0.0, 0.0, 0.0],
             matched_words=[],
+            recall=0.0,
+            evidence_mass=0.0,
         )
+
+    # Scale recall by how much distinctive text was actually anchored. A
+    # phrase whose tokens are all common on this page can recall 100% of
+    # itself off unrelated text, so recall on its own overstates confidence
+    # for short, generic phrases; scaling by evidence mass discounts exactly
+    # those without penalizing a long paraphrase for its filler words.
+    word_tokens = [_clean(w.text) for w in page_ocr.words]
+    counts = Counter(word_tokens)
+    anchored_tokens = [word_tokens[i] for i in matched_indices]
+    evidence_mass = _evidence_mass(anchored_tokens, counts, len(word_tokens))
+    evidence_factor = min(1.0, evidence_mass / _MIN_EVIDENCE_MASS)
+    match_score = recall * evidence_factor
 
     span_start, span_end = min(matched_indices), max(matched_indices) + 1
     matched_words = page_ocr.words[span_start:span_end]
@@ -238,4 +296,6 @@ def reconcile_phrase(
         bbox_1000=bbox_1000,
         bbox_pixels=[x_min, y_min, x_max, y_max],
         matched_words=matched_words,
+        recall=recall,
+        evidence_mass=evidence_mass,
     )
