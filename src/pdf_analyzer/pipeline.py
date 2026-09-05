@@ -25,7 +25,7 @@ from .schema import (
     Source,
 )
 from .stage1_ingest import ingest
-from .stage2_ocr import ocr_document
+from .stage2_ocr import extract_document_words
 from .stage2_vlm import VlmBackend
 from .stage3_reconcile import VERIFICATION_THRESHOLD, reconcile_phrase
 
@@ -124,8 +124,8 @@ def analyze_document(
 
     page_image_paths = {p.page_number: p.image_path for p in ingest_result.pages}
 
-    logger.info("Stage 2a: OCR pass over %d pages", len(page_image_paths))
-    ocr_results = ocr_document(page_image_paths)
+    logger.info("Stage 2a: text extraction pass over %d pages", len(page_image_paths))
+    ocr_results = extract_document_words(ingest_result.standardized_pdf, ingest_result.pages)
 
     logger.info("Stage 2b: VLM pass over %d pages", len(page_image_paths))
     vlm_results = vlm_backend.extract_document(page_image_paths)

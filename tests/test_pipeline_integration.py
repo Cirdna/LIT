@@ -1,8 +1,9 @@
 """End-to-end wiring test for pipeline.analyze_document: real Stage 1
-rendering (PyMuPDF) against a synthetic PDF, with fake OCR/VLM results
-standing in for Tesseract and a local VLM (neither is installed in CI/dev
-sandboxes without extra system deps). This exercises the page-number and
-bbox plumbing between stages that pure unit tests can't catch.
+rendering and real Stage 2a text extraction (both via PyMuPDF, no system
+binary needed) against a synthetic born-digital PDF, with a fake VLM
+standing in for Qwen2.5-VL/InternVL/OpenRouter (none of which are available
+in every dev/CI environment). This exercises the page-number and bbox
+plumbing between stages that pure unit tests can't catch.
 """
 
 from __future__ import annotations
@@ -13,7 +14,6 @@ import fitz
 import pytest
 
 from pdf_analyzer import pipeline as pipeline_mod
-from pdf_analyzer.stage2_ocr import OcrPageResult, OcrWord
 from pdf_analyzer.schema import AnswerStatus, EvidenceStatus
 from pdf_analyzer.stage2_vlm import VlmBackend, VlmClauseExtraction, VlmPageResult
 
@@ -35,9 +35,9 @@ def sample_pdf(tmp_path) -> Path:
 
 
 class FakeVlmBackend(VlmBackend):
-    """Stands in for Qwen2.5-VL/InternVL: returns fixed extractions instead
-    of running real inference, so the pipeline's stage-wiring can be tested
-    without GPU/model-weight dependencies."""
+    """Stands in for Qwen2.5-VL/InternVL/OpenRouter: returns fixed
+    extractions instead of running real inference, so the pipeline's
+    stage-wiring can be tested without a GPU or API key."""
 
     def extract_page(self, image_path: Path, page_number: int) -> VlmPageResult:
         if page_number != 1:
@@ -64,44 +64,7 @@ class FakeVlmBackend(VlmBackend):
         )
 
 
-def _fake_ocr_document(page_image_paths):
-    """Stands in for stage2_ocr.ocr_document (real Tesseract binary isn't
-    installed here); returns word-level boxes matching sample_pdf's text so
-    Stage 3 reconciliation has something real to align against."""
-    words_line_1 = [
-        OcrWord(text=w, x_min=x, y_min=90, x_max=x + 10 * len(w), y_max=115, confidence=95.0)
-        for x, w in _laid_out(["MASTER", "SERVICES", "AGREEMENT"], start_x=100)
-    ]
-    words_line_2 = [
-        OcrWord(text=w, x_min=x, y_min=700, x_max=x + 10 * len(w), y_max=725, confidence=95.0)
-        for x, w in _laid_out(
-            ["This", "Agreement", "shall", "be", "governed", "by", "the", "laws", "of", "California."],
-            start_x=100,
-        )
-    ]
-    return {
-        page_number: OcrPageResult(
-            page_number=page_number,
-            width_px=2550,
-            height_px=3300,
-            words=words_line_1 + words_line_2,
-        )
-        for page_number in page_image_paths
-    }
-
-
-def _laid_out(tokens, start_x):
-    x = start_x
-    out = []
-    for token in tokens:
-        out.append((x, token))
-        x += 10 * len(token) + 15
-    return out
-
-
-def test_pipeline_wires_stages_together_correctly(sample_pdf, tmp_path, monkeypatch):
-    monkeypatch.setattr(pipeline_mod, "ocr_document", _fake_ocr_document)
-
+def test_pipeline_wires_stages_together_correctly(sample_pdf, tmp_path):
     analysis = pipeline_mod.analyze_document(
         input_path=sample_pdf,
         work_dir=tmp_path / "work",
@@ -124,7 +87,8 @@ def test_pipeline_wires_stages_together_correctly(sample_pdf, tmp_path, monkeypa
     assert governing_law.answer is AnswerStatus.PRESENT
     assert "California" in governing_law.extractions[0].ocr_verification.ocr_text
 
-    # Ungrounded extraction: text the OCR can't corroborate on the page.
+    # Ungrounded extraction: text the word-extraction pass can't corroborate
+    # on the page (there is no insurance clause on this synthetic page).
     insurance = analysis.cuad_findings["insurance"]
     assert not insurance.extractions[0].ocr_verification.is_grounded
     assert insurance.review_flag.flagged
