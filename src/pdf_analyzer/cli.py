@@ -68,7 +68,24 @@ def _build_parser() -> argparse.ArgumentParser:
         "--concurrency",
         type=int,
         default=None,
-        help="OpenRouter only: pages processed in parallel (default: 4).",
+        help="OpenRouter only: pages processed in parallel (default: 4 for --prompt-mode single, "
+        "1 for granular, since granular already parallelizes within a page).",
+    )
+    analyze.add_argument(
+        "--prompt-mode",
+        choices=["single", "granular"],
+        default="single",
+        help="OpenRouter only: 'single' asks about all 41 CUAD categories in one call per page "
+        "(fast, cheap, but a clause satisfying multiple categories at once gets forced into just "
+        "one). 'granular' asks about each category separately (41 calls/page) so the same clause "
+        "can correctly match several categories, at ~41x the request volume and cost.",
+    )
+    analyze.add_argument(
+        "--granular-concurrency",
+        type=int,
+        default=None,
+        help="OpenRouter granular mode only: category calls processed in parallel per page "
+        "(default: 8).",
     )
     analyze.add_argument(
         "--max-pixels",
@@ -103,8 +120,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.model_id:
             backend_kwargs["model_id"] = args.model_id
         if args.backend == "openrouter":
+            backend_kwargs["prompt_mode"] = args.prompt_mode
             if args.concurrency:
                 backend_kwargs["concurrency"] = args.concurrency
+            if args.granular_concurrency:
+                backend_kwargs["granular_concurrency"] = args.granular_concurrency
         else:
             if args.device:
                 backend_kwargs["device"] = args.device

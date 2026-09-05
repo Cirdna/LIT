@@ -189,3 +189,124 @@ def test_factory_builds_openrouter_by_default(monkeypatch):
 def test_factory_rejects_unknown_backend():
     with pytest.raises(ValueError):
         build_vlm_backend("gpt-42")
+
+
+# --------------------------------------------------------------------------
+# Granular prompt mode: one call per CUAD category instead of one per page.
+# --------------------------------------------------------------------------
+
+
+def test_granular_mode_defaults_page_concurrency_to_one(monkeypatch):
+    """Granular mode already fans out 41 calls within a page; also
+    parallelizing across pages on top of that would multiply in-flight
+    requests past what's reasonable, so page-level concurrency defaults
+    down unless the caller explicitly overrides it."""
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    granular = OpenRouterBackend(prompt_mode="granular")
+    single = OpenRouterBackend(prompt_mode="single")
+    assert granular.concurrency == 1
+    assert single.concurrency == 4
+
+    explicit = OpenRouterBackend(prompt_mode="granular", concurrency=3)
+    assert explicit.concurrency == 3
+
+
+def test_granular_mode_rejects_invalid_value(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    with pytest.raises(ValueError):
+        OpenRouterBackend(prompt_mode="both")
+
+
+def test_single_category_prompt_names_only_that_category():
+    from pdf_analyzer.cuad_classes import CUAD_CLASSES
+    from pdf_analyzer.stage2_vlm import _build_single_category_prompt
+
+    prompt = _build_single_category_prompt("governing_law")
+    assert "Governing Law" in prompt
+    # Must not leak the other 40 category names into a supposedly narrow ask.
+    other_names = [v for k, v in CUAD_CLASSES.items() if k != "governing_law"]
+    assert not any(name in prompt for name in other_names)
+
+
+def test_single_category_response_parses_found_true():
+    from pdf_analyzer.stage2_vlm import _parse_single_category_response
+
+    raw = '{"found": true, "vlm_text": "governed by Delaware law", "clause_label": "13.5"}'
+    result = _parse_single_category_response(raw, "governing_law")
+
+    assert result is not None
+    assert result.cuad_class == "governing_law"
+    assert result.vlm_text == "governed by Delaware law"
+
+
+def test_single_category_response_parses_found_false():
+    from pdf_analyzer.stage2_vlm import _parse_single_category_response
+
+    result = _parse_single_category_response('{"found": false}', "insurance")
+    assert result is None
+
+
+def test_single_category_response_handles_malformed_json():
+    from pdf_analyzer.stage2_vlm import _parse_single_category_response
+
+    result = _parse_single_category_response("not json at all", "insurance")
+    assert result is None
+
+
+def test_granular_extract_page_issues_one_call_per_category(backend, page_image, monkeypatch):
+    """The whole point of granular mode: a clause that satisfies multiple
+    categories should show up under each one, because each is asked about
+    independently rather than forced into a single choice."""
+    from pdf_analyzer.cuad_classes import CUAD_CLASSES
+
+    backend.prompt_mode = "granular"
+    backend.granular_concurrency = 4
+    shared_text = "Each party disclaims ownership of the other's intellectual property."
+
+    calls = []
+
+    def fake_chat(prompt_text, image_uri):
+        calls.append(prompt_text)
+        if "IP Ownership Assignment" in prompt_text or "Joint IP Ownership" in prompt_text:
+            return json.dumps({"found": True, "vlm_text": shared_text, "clause_label": "8.1"})
+        return json.dumps({"found": False})
+
+    monkeypatch.setattr(backend, "_chat", fake_chat)
+
+    result = backend.extract_page(page_image, 8)
+
+    assert len(calls) == len(CUAD_CLASSES)  # one call per category, no more no less
+    matched_classes = {e.cuad_class for e in result.extractions}
+    # The same clause correctly lands under BOTH categories -- this is
+    # exactly the misfiling case the single-shot prompt couldn't handle.
+    assert matched_classes == {"ip_ownership_assignment", "joint_ip_ownership"}
+    assert all(e.vlm_text == shared_text for e in result.extractions)
+
+
+def test_granular_mode_tolerates_one_category_call_failing(backend, page_image, monkeypatch):
+    """41 independent calls means 41 independent failure points; one bad
+    call must not sink the other 40."""
+    from pdf_analyzer.stage2_vlm import OpenRouterError
+
+    backend.prompt_mode = "granular"
+    backend.granular_concurrency = 4
+
+    def flaky_chat(prompt_text, image_uri):
+        if "Insurance" in prompt_text:
+            raise OpenRouterError("simulated transient failure")
+        return json.dumps({"found": False})
+
+    monkeypatch.setattr(backend, "_chat", flaky_chat)
+
+    result = backend.extract_page(page_image, 1)  # should not raise
+    assert result.extractions == []
+
+
+def test_single_mode_still_uses_one_call_per_page(backend, page_image, monkeypatch):
+    """Regression guard: 'single' must stay a single call, not silently
+    pick up granular's fan-out."""
+    calls = []
+    monkeypatch.setattr(backend, "_chat", lambda p, i: calls.append(1) or "[]")
+
+    backend.extract_page(page_image, 1)
+    assert len(calls) == 1

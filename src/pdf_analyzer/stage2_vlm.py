@@ -147,6 +147,78 @@ def _parse_vlm_json(raw_text: str) -> list[VlmClauseExtraction]:
     return extractions
 
 
+def _build_single_category_prompt(category_key: str) -> str:
+    """Build a prompt asking about exactly one CUAD category.
+
+    The one-shot 41-category prompt above causes misfiling: when a clause
+    genuinely satisfies more than one category at once (an ownership
+    acknowledgment paragraph is simultaneously IP Ownership Assignment,
+    Joint IP Ownership, and Covenant Not To Sue evidence in the Armstrong
+    Flooring contract), a single pass has to force it into one bucket and
+    picks the most obvious one, silently dropping the others.
+
+    Asking about one category at a time removes the forced choice entirely
+    -- the model can, and does, answer "yes" to several separate questions
+    about the same paragraph, because each question only requires a binary
+    judgment about one thing rather than a ranking across 41. Since the
+    category is fixed by which prompt was sent, the response doesn't need to
+    name it at all, which also removes the "model invents a category name"
+    failure mode the 41-way prompt has to filter for.
+    """
+    category_name = CUAD_CLASSES[category_key]
+    return f"""You are a contract analysis engine reviewing one page of a legal contract.
+
+Does this page contain text addressing this specific category: {category_name}?
+
+Look for genuine textual support before answering yes -- do not force a match
+to something unrelated just because it is the closest available category.
+
+If yes: copy the relevant text VERBATIM from the image (do not paraphrase,
+summarize, or invent text), and give a short label for the clause or section
+it appears under.
+
+If no genuine textual support for "{category_name}" exists on this page,
+answer with found: false.
+
+Respond with ONLY JSON, no markdown fences, no commentary, in exactly this shape:
+{{"found": true, "vlm_text": "<verbatim text>", "clause_label": "<section heading>"}}
+or
+{{"found": false}}"""
+
+
+def _parse_single_category_response(raw_text: str, category_key: str) -> VlmClauseExtraction | None:
+    text = raw_text.strip()
+    fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if fence_match:
+        text = fence_match.group(1)
+    else:
+        obj_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if obj_match:
+            text = obj_match.group(0)
+
+    try:
+        obj = json.loads(text)
+    except json.JSONDecodeError:
+        logger.warning(
+            "VLM output for category %r was not parseable as JSON; dropping. First 200 chars: %r",
+            category_key,
+            raw_text[:200],
+        )
+        return None
+
+    if not obj.get("found"):
+        return None
+    vlm_text = obj.get("vlm_text")
+    if not vlm_text:
+        return None
+
+    return VlmClauseExtraction(
+        cuad_class=category_key,
+        vlm_text=vlm_text,
+        clause_label=obj.get("clause_label", ""),
+    )
+
+
 class VlmBackend(ABC):
     """Common interface so the pipeline can swap hosted <-> local models
     without touching Stage 3 reconciliation or the output schema."""
@@ -190,7 +262,9 @@ class OpenRouterBackend(VlmBackend):
         max_image_edge: int = 1600,
         timeout: float = 180.0,
         max_retries: int = 4,
-        concurrency: int = 4,
+        concurrency: int | None = None,
+        prompt_mode: str = "single",
+        granular_concurrency: int = 8,
         site_url: str | None = None,
         app_name: str = "pdf-contract-analyzer",
     ):
@@ -200,14 +274,28 @@ class OpenRouterBackend(VlmBackend):
                 "No OpenRouter API key. Set OPENROUTER_API_KEY in the environment "
                 "or pass api_key=... . Get one at https://openrouter.ai/keys"
             )
+        if prompt_mode not in ("single", "granular"):
+            raise ValueError(f"prompt_mode must be 'single' or 'granular', got {prompt_mode!r}")
+
         self.model_id = model_id
         self.max_new_tokens = max_new_tokens
         self.max_image_edge = max_image_edge
         self.timeout = timeout
         self.max_retries = max_retries
-        self.concurrency = concurrency
+        self.prompt_mode = prompt_mode
+        self.granular_concurrency = granular_concurrency
         self.site_url = site_url
         self.app_name = app_name
+
+        # Granular mode already issues 41 concurrent calls per page (bounded
+        # by granular_concurrency); also parallelizing across pages on top of
+        # that would multiply in-flight requests past what's reasonable for
+        # one API key, so default page-level concurrency down to 1 there
+        # unless the caller explicitly overrides it.
+        if concurrency is not None:
+            self.concurrency = concurrency
+        else:
+            self.concurrency = 1 if prompt_mode == "granular" else 4
 
     def _headers(self) -> dict:
         headers = {
@@ -288,7 +376,8 @@ class OpenRouterBackend(VlmBackend):
 
         raise OpenRouterError(f"OpenRouter failed after {self.max_retries} attempts: {last_error}")
 
-    def extract_page(self, image_path: Path, page_number: int) -> VlmPageResult:
+    def _chat(self, prompt_text: str, image_uri: str) -> str:
+        """One chat-completion call; returns the response's text content."""
         payload = {
             "model": self.model_id,
             "max_tokens": self.max_new_tokens,
@@ -297,16 +386,12 @@ class OpenRouterBackend(VlmBackend):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": _build_prompt()},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": self._encode_image(image_path)},
-                        },
+                        {"type": "text", "text": prompt_text},
+                        {"type": "image_url", "image_url": {"url": image_uri}},
                     ],
                 }
             ],
         }
-
         data = self._post(payload)
         try:
             content = data["choices"][0]["message"]["content"]
@@ -315,9 +400,52 @@ class OpenRouterBackend(VlmBackend):
 
         if isinstance(content, list):  # some models return content parts
             content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+        return content
 
+    def extract_page(self, image_path: Path, page_number: int) -> VlmPageResult:
+        if self.prompt_mode == "granular":
+            return self._extract_page_granular(image_path, page_number)
+        return self._extract_page_single(image_path, page_number)
+
+    def _extract_page_single(self, image_path: Path, page_number: int) -> VlmPageResult:
+        """One call per page, asking about all 41 categories at once."""
+        content = self._chat(_build_prompt(), self._encode_image(image_path))
         extractions = _parse_vlm_json(content)
-        logger.info("page %d: %d extractions from %s", page_number, len(extractions), self.model_id)
+        logger.info("page %d (single): %d extractions from %s", page_number, len(extractions), self.model_id)
+        return VlmPageResult(page_number=page_number, extractions=extractions)
+
+    def _extract_page_granular(self, image_path: Path, page_number: int) -> VlmPageResult:
+        """One call per category (41 per page), each a narrow yes/no + quote
+        question. See _build_single_category_prompt's docstring for why: it
+        removes the forced 41-way choice that causes the single-shot prompt
+        to misfile a clause that genuinely satisfies more than one category.
+        """
+        image_uri = self._encode_image(image_path)
+
+        def call_one(category_key: str) -> VlmClauseExtraction | None:
+            content = self._chat(_build_single_category_prompt(category_key), image_uri)
+            return _parse_single_category_response(content, category_key)
+
+        extractions: list[VlmClauseExtraction] = []
+        with ThreadPoolExecutor(max_workers=self.granular_concurrency) as pool:
+            futures = {pool.submit(call_one, key): key for key in CUAD_CLASSES}
+            for future in futures:
+                key = futures[future]
+                try:
+                    result = future.result()
+                except OpenRouterError as exc:
+                    logger.warning("page %d, category %r failed: %s", page_number, key, exc)
+                    continue
+                if result is not None:
+                    extractions.append(result)
+
+        logger.info(
+            "page %d (granular): %d/%d categories matched from %s",
+            page_number,
+            len(extractions),
+            len(CUAD_CLASSES),
+            self.model_id,
+        )
         return VlmPageResult(page_number=page_number, extractions=extractions)
 
 
