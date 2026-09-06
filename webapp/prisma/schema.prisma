@@ -64,6 +64,10 @@ model Document {
   invoiceMatches         InvoiceMatch[]    @relation("InvoiceToMatch")
   contractInvoiceMatches InvoiceMatch[]    @relation("ContractToMatch")
 
+  // Per-contract statute review
+  clauseAnnotations     ClauseAnnotation[]
+  contractClauseReviews ContractClauseReview[]
+
   @@unique([workspaceId, sha256])
   @@map("documents")
 }
@@ -260,6 +264,68 @@ model HandoffBrief {
   workspace Workspace @relation(fields: [workspaceId], references: [id])
 
   @@map("handoff_briefs")
+}
+
+// Human-in-the-loop statute review. Datapoints are the statute "chunks" from
+// src/pdf_analyzer/files/*.json; each is flagged with one of four AI statuses and
+// then verified by a human. Annotations are an append-only audit trail.
+model StatuteClause {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId            String   @map("workspace_id") @db.Uuid
+  clauseKey              String   @map("clause_key") // the chunk's own id, e.g. 'misrep_s3_...'
+  source                 String // statute name, e.g. 'Misrepresentation Act 1967'
+  provision              String // e.g. 'Section 3'
+  exactWording           String   @map("exact_wording")
+  summary                String?
+  aiStatus               String   @map("ai_status") // Quoted|Inferred|Evaluation Required|NA
+  reviewStatus           String   @default("open") @map("review_status") // open|human_verified|overridden|manual_review
+  authorityBasis         String?  @map("authority_basis") // statute_text|case_law_gloss
+  caseCitation           String?  @map("case_citation")
+  naReason               String?  @map("na_reason")
+  targetFields           String[] @default([]) @map("target_fields")
+  applicableContractTypes String[] @default([]) @map("applicable_contract_types")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  annotations     ClauseAnnotation[]
+  contractReviews ContractClauseReview[]
+
+  @@unique([workspaceId, clauseKey])
+  @@index([workspaceId, source])
+  @@map("statute_clauses")
+}
+
+model ClauseAnnotation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clauseId   String   @map("clause_id") @db.Uuid
+  documentId String?  @map("document_id") @db.Uuid // null = global (/statutes); set = per-contract
+  kind       String // note|agree|disagree|manual_review
+  author     String
+  body       String? // the note text (null for a bare verify action)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  clause   StatuteClause @relation(fields: [clauseId], references: [id], onDelete: Cascade)
+  document Document?     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([clauseId, documentId, createdAt])
+  @@map("clause_annotations")
+}
+
+// Per-contract review state for a statute applied to a specific document. The
+// AI status is computed per contract (jurisdiction gate); this stores only the
+// human resolution, keyed by (document, clause).
+model ContractClauseReview {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  clauseId     String   @map("clause_id") @db.Uuid
+  reviewStatus String   @default("open") @map("review_status") // open|human_verified|overridden|manual_review
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  document Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  clause   StatuteClause @relation(fields: [clauseId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, clauseId])
+  @@map("contract_clause_reviews")
 }
 
 model Job {

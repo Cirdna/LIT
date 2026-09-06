@@ -1,0 +1,229 @@
+[
+  {
+    "id": "crtpa_s2_third_party_enforcement",
+    "category": "statute",
+    "source": "Contracts (Rights of Third Parties) Act 2001",
+    "provision": "Sections 2(1) to 2(4)",
+    "exact_wording": "2.—(1) Subject to the provisions of this Act, a person who is not a party to a contract (called in this Act a third party) may, in the third party's own right, enforce a term of the contract if (a) the contract expressly provides that the third party may; or (b) subject to subsection (2), the term purports to confer a benefit on the third party. (2) Subsection (1)(b) does not apply if, on a proper construction of the contract, it appears that the parties did not intend the term to be enforceable by the third party. (3) The third party must be expressly identified in the contract by name, as a member of a class or as answering a particular description, but need not be in existence when the contract is entered into. (4) This section does not confer a right on a third party to enforce a term of a contract otherwise than subject to and in accordance with any other relevant terms of the contract.",
+    "summary": "A non-party may enforce a contract term if the contract expressly says so, or if the term purports to confer a benefit on them (unless the parties evidently did not intend enforceability), provided the third party is identified by name, class or description.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "nda",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "contract entered into on or after 1 January 2002 (or entered into earlier but expressly provides for the application of this Act)",
+      "no express clause found excluding or disclaiming CRTPA / third-party rights",
+      "contract type is not one to which the s.7 exceptions remove third-party enforcement entirely (e.g. contracts of employment as against the employee, negotiable instruments, company constitution documents, certain carriage contracts)"
+    ],
+    "target_fields": [
+      "crtpa_exclusion_status",
+      "third_party_rights"
+    ],
+    "trigger_keywords": [
+      "third party",
+      "benefit",
+      "enforce",
+      "non-party"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "crtpa_exclusion_status",
+        "status": "cuad_partial_proxy",
+        "cuad_category": "third_party_beneficiary",
+        "note": "CUAD's third_party_beneficiary category flags the presence of a beneficiary/indemnification clause naming non-parties, which is a useful trigger signal, but it does not itself confirm whether an express CRTPA-exclusion clause exists -- that still needs a dedicated check, not just this category's absence/presence."
+      },
+      {
+        "target_field": "third_party_rights",
+        "status": "cuad_partial_proxy",
+        "cuad_category": "third_party_beneficiary",
+        "note": "Same partial-proxy relationship as crtpa_exclusion_status."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "crtpa_s2_6_exclusion_availment",
+    "category": "statute",
+    "source": "Contracts (Rights of Third Parties) Act 2001",
+    "provision": "Section 2(6)",
+    "exact_wording": "(6) Where a term of a contract excludes or limits liability in relation to any matter, references in this Act to the third party enforcing the term are to be construed as references to the third party availing himself, herself or itself of the exclusion or limitation.",
+    "summary": "A third party 'enforces' an exclusion/limitation-of-liability term by availing itself of that exclusion or limitation — meaning a liability cap or exclusion clause can potentially be relied on by an identified third party (e.g. an affiliate or subcontractor), not just the contracting parties, if it purports to confer that benefit on them and CRTPA is not excluded.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "a liability cap or exclusion/limitation clause is populated",
+      "the clause on its face purports to extend its benefit to a third party (e.g. an affiliate, parent company, or named class such as 'subcontractors')",
+      "no express CRTPA-exclusion clause found"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability"
+    ],
+    "trigger_keywords": [
+      "exclude",
+      "limit",
+      "third party",
+      "affiliate",
+      "subcontractor"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "crtpa_s7_exceptions",
+    "category": "statute",
+    "source": "Contracts (Rights of Third Parties) Act 2001",
+    "provision": "Sections 7(1), 7(2), 7(4) and 7(5)",
+    "exact_wording": "7.—(1) Section 2 does not confer any right on a third party in the case of a contract on a bill of exchange, promissory note or other negotiable instrument. (2) Section 2 does not confer any right on a third party in the case of any contract binding on a company and its members under section 39 of the Companies Act 1967. (4) Section 2 does not confer any right on a third party to enforce any term of a contract of employment against an employee. (5) Section 2 does not confer any right on a third party in the case of (a) a contract for the carriage of goods by sea; or (b) a contract for the carriage of goods by rail or road, or for the carriage of cargo by air, which is subject to the rules of the appropriate international transport convention, except that a third party may in reliance on that section avail the third party of an exclusion or limitation of liability in such a contract.",
+    "summary": "CRTPA third-party enforcement rights do not arise at all for negotiable instruments, a company's constitutional documents, contracts of employment as against the employee, or (subject to an exclusion/limitation-availment carve-out) carriage-of-goods contracts by sea, rail, road or air.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "employment",
+      "distribution",
+      "other_commercial"
+    ],
+    "applicability_conditions": [
+      "contract classified as employment, or otherwise falls within one of the s.7 categories (negotiable instrument, company constitutional document, or carriage of goods by sea/rail/road/air)"
+    ],
+    "target_fields": [
+      "crtpa_exclusion_status",
+      "third_party_rights"
+    ],
+    "trigger_keywords": [
+      "employment",
+      "carriage",
+      "negotiable instrument",
+      "bill of exchange"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "crtpa_exclusion_status",
+        "status": "cuad_partial_proxy",
+        "cuad_category": "third_party_beneficiary",
+        "note": "CUAD's third_party_beneficiary category flags the presence of a beneficiary/indemnification clause naming non-parties, which is a useful trigger signal, but it does not itself confirm whether an express CRTPA-exclusion clause exists -- that still needs a dedicated check, not just this category's absence/presence."
+      },
+      {
+        "target_field": "third_party_rights",
+        "status": "cuad_partial_proxy",
+        "cuad_category": "third_party_beneficiary",
+        "note": "Same partial-proxy relationship as crtpa_exclusion_status."
+      }
+    ]
+  },
+  {
+    "id": "crtpa_s8_2_ucta_interaction",
+    "category": "statute",
+    "source": "Contracts (Rights of Third Parties) Act 2001",
+    "provision": "Section 8(2)",
+    "exact_wording": "(2) Section 2(2) of the Unfair Contract Terms Act 1977 (exclusion of or restriction on liability for negligence) does not apply where the negligence consists of the breach of an obligation arising from a term of a contract and the person seeking to enforce it is a third party acting in reliance on section 2.",
+    "summary": "UCTA's s.2(2) reasonableness requirement for negligence-liability exclusions is disapplied where the negligence is a breach of a contractual term and the person relying on it is a third party enforcing under CRTPA s.2 — relevant cross-check before firing the UCTA s.2(2) validator on a clause a third party might invoke.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "a UCTA s.2(2) negligence-liability trigger has been identified as potentially applicable",
+      "the negligence at issue arises from breach of a contractual obligation (not an independent tortious duty)",
+      "the person seeking to enforce/rely on the term is a third party acting under CRTPA s.2, not a contracting party"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability"
+    ],
+    "trigger_keywords": [
+      "negligence",
+      "third party",
+      "UCTA"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  }
+]

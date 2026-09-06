@@ -12,6 +12,7 @@ htmlcov/
 # pipeline intermediates
 *.work/
 result*.json
+*_result.json
 .jobs/
 
 # frontend

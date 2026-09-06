@@ -13,6 +13,7 @@ import { registerHandoffRoutes } from "./routes/handoffs.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
 import { registerBenchmarkRoutes } from "./routes/benchmark.js";
 import { registerChatRoutes } from "./routes/chat.js";
+import { registerStatuteRoutes } from "./routes/statutes.js";
 import { registerHealthRoutes } from "./routes/health.js";
 
 async function build() {
@@ -59,6 +60,7 @@ async function build() {
   await registerPortfolioRoutes(app);
   await registerBenchmarkRoutes(app);
   await registerChatRoutes(app);
+  await registerStatuteRoutes(app);
 
   return app;
 }

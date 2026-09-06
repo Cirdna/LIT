@@ -1,0 +1,806 @@
+[
+  {
+    "id": "ucta_s2_1_death_personal_injury",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Section 2(1)",
+    "exact_wording": "2.—(1) A person cannot by reference to any contract term or to a notice given to persons generally or to particular persons exclude or restrict his liability for death or personal injury resulting from negligence.",
+    "summary": "An absolute bar — liability for death or personal injury caused by negligence can never be excluded or restricted by contract, regardless of reasonableness.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "services",
+      "sale_of_goods",
+      "distribution",
+      "lease",
+      "other_commercial"
+    ],
+    "applicability_conditions": [
+      "a liability cap/exclusion clause is populated",
+      "the clause purports to exclude or restrict liability for death or personal injury",
+      "the liability arises from negligence as defined in s.1(1) (breach of a contractual or common-law duty of reasonable care/skill)",
+      "the liability is a business liability (s.1(3)) and the contract is not exempted under the First Schedule"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability"
+    ],
+    "trigger_keywords": [
+      "death",
+      "personal injury",
+      "negligence",
+      "exclude",
+      "restrict"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      }
+    ]
+  },
+  {
+    "id": "ucta_s2_2_negligence_other_loss",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Section 2(2)",
+    "exact_wording": "(2) In the case of other loss or damage, a person cannot so exclude or restrict his liability for negligence except in so far as the term or notice satisfies the requirement of reasonableness.",
+    "summary": "For negligence causing loss other than death/personal injury, an exclusion or restriction of liability is only effective if it satisfies the s.11 reasonableness test.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "services",
+      "sale_of_goods",
+      "distribution",
+      "lease",
+      "other_commercial"
+    ],
+    "applicability_conditions": [
+      "a liability cap/exclusion clause is populated",
+      "the clause purports to exclude or restrict liability for negligence (as defined in s.1(1)) causing loss other than death/personal injury",
+      "the liability is a business liability (s.1(3))",
+      "the contract is not exempted from ss.2-4 under the First Schedule (e.g. insurance, land, IP, company formation, securities), nor an international supply contract under s.26"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability"
+    ],
+    "trigger_keywords": [
+      "negligence",
+      "exclude",
+      "restrict",
+      "liability"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      }
+    ]
+  },
+  {
+    "id": "ucta_s3_consumer_standard_terms",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 3(1) and 3(2)",
+    "exact_wording": "3.—(1) This section applies as between contracting parties where one of them deals as consumer or on the other's written standard terms of business. (2) As against that party, the other cannot by reference to any contract term (a) when himself in breach of contract, exclude or restrict any liability of his in respect of the breach; or (b) claim to be entitled (i) to render a contractual performance substantially different from that which was reasonably expected of him; or (ii) in respect of the whole or any part of his contractual obligation, to render no performance at all, except in so far as (in any of the cases mentioned in this subsection) the contract term satisfies the requirement of reasonableness.",
+    "summary": "Where one party deals as consumer or contracts on the other's written standard terms, clauses letting the other party exclude liability for its own breach, or perform substantially differently or not at all, must satisfy the s.11 reasonableness test.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "services",
+      "sale_of_goods",
+      "distribution",
+      "lease",
+      "other_commercial"
+    ],
+    "applicability_conditions": [
+      "a limitation-of-liability, force majeure, or performance-variation clause is populated",
+      "one contracting party deals as consumer (s.12), or the contract was made on one party's written standard terms of business",
+      "the clause purports to exclude/restrict liability for that party's own breach, or to permit substantially different or no performance",
+      "the contract is not exempted from s.3 under the First Schedule, nor an international supply contract under s.26"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability",
+      "force_majeure",
+      "performance_standard"
+    ],
+    "trigger_keywords": [
+      "standard terms",
+      "consumer",
+      "breach",
+      "substantially different",
+      "no performance"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      },
+      {
+        "target_field": "force_majeure",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "CUAD has no force majeure / frustration-clause category. This trigger's core applicability condition ('no FM clause found') cannot currently be checked from a CUAD-only extraction."
+      },
+      {
+        "target_field": "performance_standard",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures a general performance-standard/substituted-performance clause."
+      }
+    ]
+  },
+  {
+    "id": "ucta_s7_3a_goods_pass_title",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Section 7(3A)",
+    "exact_wording": "(3A) Liability for breach of the obligations arising under section 2 of the Supply of Goods Act 1982 (implied terms about title, etc., in certain contracts for the transfer of property in goods) cannot be excluded or restricted by reference to any such term.",
+    "summary": "For contracts under which goods pass otherwise than by sale or hire-purchase (e.g. a services/transfer-of-goods contract), the implied title warranty under Supply of Goods Act s.2 can never be excluded.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services and involves the passing of possession or ownership of goods otherwise than by sale of goods or hire-purchase",
+      "a clause purports to exclude or restrict the implied title warranty (Supply of Goods Act s.2)"
+    ],
+    "target_fields": [
+      "title_warranty"
+    ],
+    "trigger_keywords": [
+      "title",
+      "transfer of property",
+      "exclude",
+      "restrict"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "title_warranty",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures an implied title/right-to-sell warranty for goods; this chunk cannot fire against a CUAD-only extraction until a supplemental extraction category is added."
+      }
+    ]
+  },
+  {
+    "id": "ucta_s7_2_3_goods_pass_quality",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 7(2) and 7(3)",
+    "exact_wording": "(2) As against a person dealing as consumer, liability in respect of the goods' correspondence with description or sample, or their quality or fitness for any particular purpose, cannot be excluded or restricted by reference to any such term. (3) As against a person dealing otherwise than as consumer, that liability can be excluded or restricted by reference to such a term, but only in so far as the term satisfies the requirement of reasonableness.",
+    "summary": "For contracts under which goods pass otherwise than by sale/hire-purchase, description/quality/fitness liability cannot be excluded at all against a consumer, and can only be excluded against a non-consumer if the clause is reasonable.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services and involves the passing of possession or ownership of goods otherwise than by sale of goods or hire-purchase",
+      "a clause purports to exclude or restrict description/quality/fitness liability",
+      "if the counterparty deals as consumer, exclusion is automatically ineffective; otherwise reasonableness under s.11 must be assessed"
+    ],
+    "target_fields": [
+      "description_conformity",
+      "satisfactory_quality",
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "quality",
+      "fitness for purpose",
+      "description",
+      "exclude",
+      "restrict"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "description_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures goods-description conformity (this is a goods-quality concept, distinct from CUAD's document-level 'document_name' or IP-description fields)."
+      },
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      },
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "ucta_s11_reasonableness_test",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 11(1), 11(2), 11(4) and 11(5)",
+    "exact_wording": "11.—(1) In relation to a contract term, the requirement of reasonableness for the purposes of this Part and section 3 of the Misrepresentation Act 1967 is that the term shall have been a fair and reasonable one to be included having regard to the circumstances which were, or ought reasonably to have been, known to or in the contemplation of the parties when the contract was made. (2) In determining for the purposes of section 6 or 7 whether a contract term satisfies the requirement of reasonableness, regard shall be had in particular to the matters specified in the Second Schedule; but this subsection does not prevent the court or arbitrator from holding, in accordance with any rule of law, that a term which purports to exclude or restrict any relevant liability is not a term of the contract. (4) Where by reference to a contract term or notice a person seeks to restrict liability to a specified sum of money, and the question arises (under this or any other Act) whether the term or notice satisfies the requirement of reasonableness, regard shall be had in particular (but without prejudice to subsection (2) in the case of contract terms) to (a) the resources which he could expect to be available to him for the purpose of meeting the liability should it arise; and (b) how far it was open to him to cover himself by insurance. (5) It is for those claiming that a contract term or notice satisfies the requirement of reasonableness to show that it does.",
+    "summary": "Defines the statutory reasonableness test used throughout UCTA and imported into s.3 of the Misrepresentation Act 1967: fairness judged at contract formation, with the Second Schedule guidelines applying to ss.6/7, specific resources/insurance factors for monetary liability caps, and the burden of proof on the party relying on the term.",
+    "role_type": "shared_validator_definition",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "distribution",
+      "lease",
+      "other_commercial"
+    ],
+    "applicability_conditions": [
+      "a UCTA s.2(2), s.3, s.6(3), s.7(3), or Misrepresentation Act s.3 trigger has independently fired and reasonableness must now be assessed"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability"
+    ],
+    "trigger_keywords": [
+      "reasonableness",
+      "fair and reasonable",
+      "reasonable"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      }
+    ]
+  },
+  {
+    "id": "ucta_s12_dealing_as_consumer",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 12(1), 12(2) and 12(3)",
+    "exact_wording": "12.—(1) A party to a contract “deals as consumer” in relation to another party if (a) he neither makes the contract in the course of a business nor holds himself out as doing so; (b) the other party does make the contract in the course of a business; and (c) in the case of a contract governed by the law of sale of goods or hire-purchase, or by section 7, the goods passing under or in pursuance of the contract are of a type ordinarily supplied for private use or consumption. (2) But on a sale by auction or by competitive tender the buyer is not in any circumstances to be regarded as dealing as consumer. (3) Subject to this, it is for those claiming that a party does not deal as consumer to show that he does not.",
+    "summary": "Defines 'dealing as consumer': the counterparty must not be contracting in the course of a business (or holding itself out as doing so), the other party must be, and (for goods contracts) the goods must be of a type ordinarily supplied for private use. Auction/competitive-tender buyers are never consumers, and the burden is on whoever asserts non-consumer status.",
+    "role_type": "shared_validator_definition",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "distribution",
+      "lease",
+      "other_commercial"
+    ],
+    "applicability_conditions": [
+      "needed as an input predicate whenever a UCTA module's applicability depends on whether a party 'deals as consumer' (e.g. ss.3, 6, 7)"
+    ],
+    "target_fields": [
+      "counterparty_type"
+    ],
+    "trigger_keywords": [
+      "consumer",
+      "in the course of a business"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "counterparty_type",
+        "status": "cuad_partial_proxy",
+        "cuad_category": "parties",
+        "note": "CUAD's 'parties' category gives raw party names/roles but not a structured consumer-vs-business classification; that classification still has to be derived downstream."
+      }
+    ]
+  },
+  {
+    "id": "ucta_schedule2_guidelines",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Second Schedule (Section 11(2))",
+    "exact_wording": "The matters to which regard is to be had in particular for the purposes of sections 6(3) and 7(3) and (4) are any of the following which appear to be relevant: (a) the strength of the bargaining positions of the parties relative to each other, taking into account (among other things) alternative means by which the customer's requirements could have been met; (b) whether the customer received an inducement to agree to the term, or in accepting it had an opportunity of entering into a similar contract with other persons, but without having to accept a similar term; (c) whether the customer knew or ought reasonably to have known of the existence and extent of the term (having regard, among other things, to any custom of the trade and any previous course of dealing between the parties); (d) where the term excludes or restricts any relevant liability if some condition is not complied with, whether it was reasonable at the time of the contract to expect that compliance with that condition would be practicable; (e) whether the goods were manufactured, processed or adapted to the special order of the customer.",
+    "summary": "The specific reasonableness guidelines for ss.6(3)/7(3)-(4): relative bargaining strength, inducements/alternative sources, the customer's knowledge of the term, practicability of any compliance condition, and whether goods were custom-made.",
+    "role_type": "shared_validator_definition",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services"
+    ],
+    "applicability_conditions": [
+      "a s.6(3) or s.7(3)/(4) exclusion clause is being assessed for reasonableness"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability",
+      "description_conformity",
+      "satisfactory_quality",
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "bargaining position",
+      "inducement",
+      "custom order",
+      "reasonableness guideline"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      },
+      {
+        "target_field": "description_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures goods-description conformity (this is a goods-quality concept, distinct from CUAD's document-level 'document_name' or IP-description fields)."
+      },
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      },
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "ucta_s26_international_supply_carveout",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 26(1), 26(2) and 26(3)",
+    "exact_wording": "26.—(1) The limits imposed by this Act on the extent to which a person may exclude or restrict liability by reference to a contract term do not apply to liability arising under such a contract as is described in subsection (3). (2) The terms of such a contract are not subject to any requirement of reasonableness under section 3 or 4. (3) Subject to subsection (4), that description of contract is one whose characteristics are the following: (a) either it is a contract of sale of goods or it is one under or in pursuance of which the possession or ownership of goods passes; and (b) it is made by parties whose places of business (or, if they have none, habitual residences) are in the territories of different States.",
+    "summary": "UCTA's limits (including the reasonableness requirement) do not apply at all to qualifying international supply contracts — sale-of-goods or goods-passing contracts between parties based in different States, meeting the cross-border delivery/formation conditions in s.26(4). This is a full carve-out, not a reasonableness factor, and should be checked before any UCTA trigger fires.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "distribution"
+    ],
+    "applicability_conditions": [
+      "the contract is a sale of goods, or one under which possession/ownership of goods passes",
+      "the contracting parties' places of business (or habitual residences) are in different States",
+      "the contract meets at least one of the s.26(4) cross-border conditions (goods in international carriage, offer/acceptance in different States, or delivery specified to a different State)"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability",
+      "description_conformity",
+      "satisfactory_quality",
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "international supply",
+      "different States",
+      "cross-border"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      },
+      {
+        "target_field": "description_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures goods-description conformity (this is a goods-quality concept, distinct from CUAD's document-level 'document_name' or IP-description fields)."
+      },
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      },
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "ucta_first_schedule_scope_exclusions",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "First Schedule, paragraph 1",
+    "exact_wording": "1. Sections 2 to 4 do not extend to (a) any contract of insurance (including a contract to pay an annuity on human life); (b) any contract so far as it relates to the creation or transfer of an interest in land, or to the termination of such an interest, whether by extinction, merger, surrender, forfeiture or otherwise; (c) any contract so far as it relates to the creation or transfer of a right or interest in any patent, trade mark, copyright, registered design, technical or commercial information or other intellectual property, or relates to the termination of any such right or interest; (d) any contract so far as it relates (i) to the formation or dissolution of a company (which means any body corporate or unincorporated association and includes a partnership); or (ii) to its constitution or the rights or obligations of its corporators or members; and (e) any contract so far as it relates to the creation or transfer of securities or of any right or interest in securities.",
+    "summary": "UCTA ss.2-4 (negligence liability, breach-of-contract liability, indemnity clauses) do not apply at all to insurance contracts, land transactions, IP assignments, company formation/constitution matters, or securities transactions — a full scope exclusion, not a reasonableness question.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "nda",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "the contract or the specific clause relates to insurance, an interest in land, IP rights, company formation/constitution, or securities, as described in First Schedule paragraph 1"
+    ],
+    "target_fields": [
+      "cap_on_liability",
+      "uncapped_liability"
+    ],
+    "trigger_keywords": [
+      "insurance",
+      "land",
+      "intellectual property",
+      "securities",
+      "company formation"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "cap_on_liability",
+        "status": "cuad_native",
+        "cuad_category": "cap_on_liability",
+        "note": null
+      },
+      {
+        "target_field": "uncapped_liability",
+        "status": "cuad_native",
+        "cuad_category": "uncapped_liability",
+        "note": null
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule). Added here specifically so the engine can affirmatively state 'UCTA ss.2-4 do not apply to this contract -- First Schedule para 1(c)' for documents classified as ip_agreement, rather than the module simply never being eligible to run. The substantive ss.2-4 chunks (s2_1, s2_2, s3, s6_1, s6_2_3, s7_3a, s7_2_3) deliberately do NOT get ip_agreement added to their own applicable_contract_types, since they should never be eligible to fire on this contract type in the first place."
+  },
+  {
+    "id": "ucta_s6_1a_title_absolute_bar_sale_of_goods",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Section 6(1)(a)",
+    "exact_wording": "6.—1) Liability for breach of the obligations arising from (a) section 12 of the Sale of Goods Act 1979 (seller's implied undertakings as to title, etc.) ... cannot be excluded or restricted by reference to any contract term.",
+    "summary": "The implied title warranty under Sale of Goods Act s.12 can never be excluded, by any contract term, in any circumstances.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods"
+    ],
+    "applicability_conditions": [
+      "contract classified as sale_of_goods",
+      "a clause purports to exclude or restrict the seller's implied title warranty (Sale of Goods Act s.12)"
+    ],
+    "target_fields": [
+      "title_warranty"
+    ],
+    "trigger_keywords": [
+      "title",
+      "exclude",
+      "restrict",
+      "seller's undertaking"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: split from ucta_s6_1_title_absolute_bar to separate the sale_of_goods limb (fireable) from the hire-purchase limb (see ucta_s6_1b_..., dependency_unavailable).",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "title_warranty",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures an implied title/right-to-sell warranty for goods; this chunk cannot fire against a CUAD-only extraction until a supplemental extraction category is added."
+      }
+    ]
+  },
+  {
+    "id": "ucta_s6_1b_title_absolute_bar_hire_purchase",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Section 6(1)(b)",
+    "exact_wording": "6.—1) Liability for breach of the obligations arising from ... (b) section 6 of the HirePurchase Act 1969 (the corresponding thing in relation to hire-purchase), cannot be excluded or restricted by reference to any contract term.",
+    "summary": "The implied title warranty equivalent under the Hire Purchase Act 1969 s.6 can never be excluded -- pending verification, see notes.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "hire_purchase"
+    ],
+    "applicability_conditions": [
+      "contract classified as hire_purchase",
+      "a clause purports to exclude or restrict the corresponding implied title warranty under Hire Purchase Act 1969 s.6"
+    ],
+    "target_fields": [
+      "title_warranty"
+    ],
+    "trigger_keywords": [
+      "title",
+      "exclude",
+      "restrict",
+      "seller's undertaking"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: split from ucta_s6_1_title_absolute_bar. The Hire Purchase Act 1969 has not been supplied to this knowledge store, so this chunk's exact_wording/summary above cannot be independently verified against the primary text. This chunk must not fire; any hire_purchase document reaching this trigger should resolve to NA / na_reason: dependency_unavailable on the title_warranty field, rather than silently skipping or being merged into the sale_of_goods limb's citation.",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "title_warranty",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures an implied title/right-to-sell warranty for goods; this chunk cannot fire against a CUAD-only extraction until a supplemental extraction category is added."
+      }
+    ],
+    "engine_status": "dependency_unavailable"
+  },
+  {
+    "id": "ucta_s6_2_3a_quality_fitness_sale_of_goods",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 6(2)(a) and 6(3)",
+    "exact_wording": "(2) As against a person dealing as consumer, liability for breach of the obligations arising from (a) section 13, 14 or 15 of the Sale of Goods Act 1979 (seller's implied undertakings as to conformity of goods with description or sample, or as to their quality or fitness for a particular purpose) ... cannot be excluded or restricted by reference to any contract term. (3) As against a person dealing otherwise than as consumer, the liability specified in subsection (2) can be excluded or restricted by reference to a contract term, but only in so far as the term satisfies the requirement of reasonableness.",
+    "summary": "Against a consumer buyer, SOGA's implied description/quality/fitness terms (ss.13-15) can never be excluded. Against a non-consumer (B2B) buyer, they can be excluded or restricted only if the clause satisfies the s.11 reasonableness test.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods"
+    ],
+    "applicability_conditions": [
+      "contract classified as sale_of_goods",
+      "a clause purports to exclude or restrict the implied description/quality/fitness terms (Sale of Goods Act ss.13-15)",
+      "if the buyer deals as consumer (s.12), the exclusion is automatically ineffective; if the buyer does not deal as consumer, reasonableness under s.11 must be assessed"
+    ],
+    "target_fields": [
+      "description_conformity",
+      "satisfactory_quality",
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "quality",
+      "fitness for purpose",
+      "description",
+      "exclude",
+      "restrict",
+      "consumer"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: split from ucta_s6_2_3_quality_fitness to separate the sale_of_goods limb (fireable) from the hire-purchase limb (see ucta_s6_2_3b_..., dependency_unavailable).",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "description_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures goods-description conformity (this is a goods-quality concept, distinct from CUAD's document-level 'document_name' or IP-description fields)."
+      },
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      },
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "ucta_s6_2_3b_quality_fitness_hire_purchase",
+    "category": "statute",
+    "source": "Unfair Contract Terms Act 1977",
+    "provision": "Sections 6(2)(b) and 6(3)",
+    "exact_wording": "(2) As against a person dealing as consumer, liability for breach of the obligations arising from ... (b) section 6A, 6B or 6C of the HirePurchase Act 1969 (the corresponding things in relation to hire-purchase), cannot be excluded or restricted by reference to any contract term. (3) As against a person dealing otherwise than as consumer, the liability specified in subsection (2) can be excluded or restricted by reference to a contract term, but only in so far as the term satisfies the requirement of reasonableness.",
+    "summary": "Hire-purchase equivalent of the SOGA ss.13-15 quality/fitness protections -- pending verification, see notes.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "hire_purchase"
+    ],
+    "applicability_conditions": [
+      "contract classified as hire_purchase",
+      "a clause purports to exclude or restrict the corresponding implied description/quality/fitness terms under Hire Purchase Act 1969 ss.6A-6C"
+    ],
+    "target_fields": [
+      "description_conformity",
+      "satisfactory_quality",
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "quality",
+      "fitness for purpose",
+      "description",
+      "exclude",
+      "restrict",
+      "consumer"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: split from ucta_s6_2_3_quality_fitness. The Hire Purchase Act 1969 has not been supplied to this knowledge store; this chunk must not fire. Any hire_purchase document reaching this trigger should resolve to NA / na_reason: dependency_unavailable, not be merged into the sale_of_goods limb's citation.",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "description_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures goods-description conformity (this is a goods-quality concept, distinct from CUAD's document-level 'document_name' or IP-description fields)."
+      },
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      },
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ],
+    "engine_status": "dependency_unavailable"
+  }
+]

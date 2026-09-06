@@ -36,7 +36,12 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from .cuad_classes import CUAD_CLASSES, category_definition
+from .cuad_classes import (
+    CUAD_CLASSES,
+    GROUP_DISAMBIGUATION_RULES,
+    STRICT_CLASSIFICATION_RULES,
+    category_definition,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,15 +86,22 @@ def _build_prompt() -> str:
     class_list = "\n".join(f"- {key}: {name}" for key, name in CUAD_CLASSES.items())
     return f"""You are a contract analysis engine reviewing one page of a legal contract.
 
-Extract every piece of text on this page that belongs to any of these {len(CUAD_CLASSES)} CUAD categories:
+Extract text on this page that belongs to any of these {len(CUAD_CLASSES)} CUAD categories:
 
 {class_list}
 
-Read the page carefully. Contract pages almost always contain several of these
-categories -- titles, party names, dates, and clause headings all map to
-categories above. Extract each one you can actually see on the page.
+{STRICT_CLASSIFICATION_RULES}
+
+{GROUP_DISAMBIGUATION_RULES}
+
+Read the page carefully and extract each category whose OPERATIVE legal effect is
+actually present on the page -- an obligation, right, restriction, exception, or
+remedy, not merely a keyword, heading, or defined term. A category may appear
+several times on a page; extract each genuine instance. Do NOT extract a category
+just because a related word appears.
 
 Copy the text VERBATIM from the image. Do not paraphrase, summarize, or invent text.
+The quoted text must itself be the operative language that satisfies the category.
 
 The "cuad_class" value must be one of the snake_case keys listed above, exactly as
 written. Do not invent new category names.
@@ -173,43 +185,46 @@ def _build_single_category_prompt(category_key: str) -> str:
       "Non-Disparagement", the model has to independently deduce that
       "shall not tarnish or bring into disrepute the reputation of ...
       goodwill" is an instance -- and often didn't, despite that exact text
-      being present. category_definition() supplies CUAD's own authoritative
-      description of the category's scope, plus the wording real contracts
-      use for it (see cuad_classes.py for the provenance of each half).
-    - "Do not force a match" turned out to be *too* conservative once
-      isolated per category: recall got worse, not better, when the prompt
-      leaned this hard against reporting anything uncertain. Stage 3 already
-      verifies every extraction against the page's OCR text and discounts
-      ungrounded or low-evidence matches (see stage3_reconcile.py) -- that
-      is where over-eager matches should get caught, not here. So this
-      version asks for anything plausibly relevant instead of holding back.
+      being present. category_definition() supplies the strict, element-based
+      classifier for the category (see cuad_classes.py) -- what QUALIFIES,
+      what does NOT, and the operative elements required.
+    - Stance: STRICT. Per CUAD_Strict_Classifier_Rules.md, a category is YES
+      only when the quoted text establishes the operative legal effect, never
+      on a keyword, heading, or defined term. This is a deliberate reversal of
+      the earlier "report anything plausible, let Stage 3 filter" posture:
+      Stage 3 verifies a quote is real and locatable, but cannot catch a
+      correctly-grounded quote filed under the wrong category (HANDOFF.md
+      §6.8), so precision has to happen here. Expect higher precision and
+      possibly lower recall -- revalidate against annotated contracts if tuned.
     """
     category_name = CUAD_CLASSES[category_key]
     definition = category_definition(category_key)
     return f"""You are a contract analysis engine reviewing one page of a legal contract.
 
-Does this page contain text addressing this specific category: {category_name}?
+Determine whether this page contains a clause whose OPERATIVE legal effect
+satisfies this CUAD category: {category_name}.
 
-Definition and what to look for:
+{STRICT_CLASSIFICATION_RULES}
+
+Classifier for this category:
 {definition}
 
-Read the page carefully against that definition -- the contract's own wording
-is very often different from the category name itself (a non-disparagement
-clause may say "tarnish" or "disrepute" and never use the word "disparage";
-a covenant not to sue may say "contest" or "challenge" and never say "sue").
+Read the page carefully against the classifier above. The contract's own wording
+is often different from the category name (a non-disparagement clause may say
+"tarnish" or "disrepute" and never say "disparage"; a covenant not to sue may say
+"contest" or "challenge" and never say "sue"). BUT wording similarity is NOT
+enough: answer found: true ONLY when the quoted text itself establishes the
+operative right, obligation, restriction, exception, or remedy the category
+requires -- never on a keyword, heading, defined term, recital, or a merely
+related concept. If the required operative element is not established on this
+page, answer found: false.
 
-If you find text that plausibly matches, report it even if you are not fully
-certain -- a downstream step separately verifies every match against the
-source text, so it is better to report a plausible candidate than to hold
-back. Copy the text VERBATIM from the image (do not paraphrase, summarize,
-or invent text), and give a short label for the clause or section it appears
-under.
-
-If there is truly nothing on this page relating to "{category_name}", answer
-with found: false.
+When you answer found: true, copy the SMALLEST passage that actually proves the
+category, VERBATIM from the image (do not paraphrase, summarize, or invent text),
+and give a short label for the clause or section it appears under.
 
 Respond with ONLY JSON, no markdown fences, no commentary, in exactly this shape:
-{{"found": true, "vlm_text": "<verbatim text>", "clause_label": "<section heading>"}}
+{{"found": true, "vlm_text": "<verbatim operative text>", "clause_label": "<section heading>"}}
 or
 {{"found": false}}"""
 

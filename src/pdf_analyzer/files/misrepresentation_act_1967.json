@@ -1,0 +1,166 @@
+[
+  {
+    "id": "misrep_s3_entire_agreement_exclusion",
+    "category": "statute",
+    "source": "Misrepresentation Act 1967",
+    "provision": "Section 3",
+    "exact_wording": "3. If a contract contains a term which would exclude or restrict (a) any liability to which a party to a contract may be subject by reason of any misrepresentation made by him before the contract was made; or (b) any remedy available to another party to the contract by reason of such a misrepresentation, that term shall be of no effect except in so far as it satisfies the requirement of reasonableness as stated in section 11(1) of the Unfair Contract Terms Act 1977, and it is for those claiming that the term satisfies that requirement to show that it does.",
+    "summary": "A term excluding or restricting liability or remedies for pre-contractual misrepresentation is ineffective unless it satisfies the UCTA s.11(1) reasonableness test, with the burden on the party relying on the clause. The Singapore Court of Appeal in RBC Properties Pte Ltd v Defu Furniture Pte Ltd [2014] SGCA 62 held, as a rule of law, that an entire-agreement clause does not by itself exclude a claim in misrepresentation, however comprehensively drafted — so such a claim survives an entire-agreement clause, but a clause that genuinely purports to exclude or restrict liability for misrepresentation (e.g. a true non-reliance warranty) must still separately clear the s.3 reasonableness bar.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "an 'entire agreement' or 'non-reliance' clause is extracted from the contract",
+      "the clause purports (expressly or by its practical effect) to exclude or restrict liability or remedies for a pre-contractual misrepresentation, as opposed to merely defining the contract's terms",
+      "the clause is assessed in light of the RBC Properties v Defu Furniture rule that a standard entire-agreement clause does not, by itself, exclude a misrepresentation claim"
+    ],
+    "target_fields": [
+      "entire_agreement_clause",
+      "misrepresentation_liability"
+    ],
+    "trigger_keywords": [
+      "entire agreement",
+      "non-reliance",
+      "misrepresentation",
+      "exclude",
+      "whole agreement"
+    ],
+    "authority_basis": "case_law_gloss",
+    "case_citation": "RBC Properties Pte Ltd v Defu Furniture Pte Ltd [2014] SGCA 62 (affirming Defu Furniture Pte Ltd v RBC Properties Pte Ltd [2014] SGHC 1)",
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "entire_agreement_clause",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "CUAD has no 'entire agreement' / non-reliance clause category at all. This trigger's applicability_conditions cannot currently be checked from a CUAD-only extraction; a dedicated clause-detection pass is needed."
+      },
+      {
+        "target_field": "misrepresentation_liability",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures pre-contractual misrepresentation liability."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "misrep_s1_bars_to_rescission",
+    "category": "statute",
+    "source": "Misrepresentation Act 1967",
+    "provision": "Section 1",
+    "exact_wording": "1. Where a person has entered into a contract after a misrepresentation has been made to him, and (a) the misrepresentation has become a term of the contract; or (b) the contract has been performed, or both, then, if otherwise he would be entitled to rescind the contract without alleging fraud, he shall be so entitled, subject to the provisions of this Act, notwithstanding the matters mentioned in paragraphs (a) and (b).",
+    "summary": "Removes two historical bars to rescission for innocent misrepresentation: the fact that the misrepresentation became a contract term, or that the contract has already been performed, no longer by themselves defeat a right to rescind.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "a pre-contractual representation has been identified as potentially incorporated as a contract term, or the contract has been fully performed",
+      "a party is asserting (or the handoff brief is flagging) a right to rescind for misrepresentation"
+    ],
+    "target_fields": [
+      "misrepresentation_liability",
+      "rescission_risk"
+    ],
+    "trigger_keywords": [
+      "rescission",
+      "rescind",
+      "misrepresentation",
+      "performed"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "misrepresentation_liability",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures pre-contractual misrepresentation liability."
+      },
+      {
+        "target_field": "rescission_risk",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures rescission risk."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "misrep_s2_damages",
+    "category": "statute",
+    "source": "Misrepresentation Act 1967",
+    "provision": "Sections 2(1) and 2(2)",
+    "exact_wording": "2.—(1) Where a person has entered into a contract after a misrepresentation has been made to him by another party thereto and as a result thereof he has suffered loss, then, if the person making the misrepresentation would be liable to damages in respect thereof had the misrepresentation been made fraudulently, that person shall be so liable notwithstanding that the misrepresentation was not made fraudulently, unless he proves that he had reasonable ground to believe and did believe up to the time the contract was made that the facts represented were true. (2) Where a person has entered into a contract after a misrepresentation has been made to him otherwise than fraudulently, and he would be entitled, by reason of the misrepresentation, to rescind the contract, then, if it is claimed, in any proceedings arising out of the contract, that the contract ought to be or has been rescinded, the court or arbitrator may declare the contract subsisting and award damages in lieu of rescission, if of opinion that it would be equitable to do so, having regard to the nature of the misrepresentation and the loss that would be caused by it if the contract were upheld, as well as to the loss that rescission would cause to the other party.",
+    "summary": "Creates a reversed-burden damages liability for negligent (non-fraudulent) misrepresentation — the representor is liable as if fraudulent unless they prove reasonable belief in the truth of the representation — and gives courts a discretion to award damages in lieu of rescission.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "a pre-contractual representation by a party has been identified and the counterparty claims to have suffered loss as a result"
+    ],
+    "target_fields": [
+      "misrepresentation_liability"
+    ],
+    "trigger_keywords": [
+      "misrepresentation",
+      "damages",
+      "reasonable ground to believe"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "misrepresentation_liability",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures pre-contractual misrepresentation liability."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  }
+]

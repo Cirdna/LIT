@@ -17,51 +17,54 @@ def test_known_categories_present():
         assert expected in CUAD_CLASSES
 
 
-def test_descriptions_and_triggers_cover_all_classes():
-    from pdf_analyzer.cuad_classes import CUAD_DESCRIPTIONS, CUAD_TRIGGER_PHRASES
+def test_classifiers_cover_all_classes():
+    from pdf_analyzer.cuad_classes import CUAD_CLASSIFIERS
 
-    assert set(CUAD_DESCRIPTIONS) == set(CUAD_CLASSES)
-    assert set(CUAD_TRIGGER_PHRASES) == set(CUAD_CLASSES)
-
-
-def test_covenant_not_to_sue_keeps_the_unrelated_matters_qualifier():
-    """Regression: the hand-written definition this replaced said only "or on
-    bringing claims against them", dropping CUAD's qualifier "for matters
-    unrelated to the contract". That omission matched a routine
-    service-interruption liability waiver in the Chase affiliate agreement --
-    a claim arising squarely under the contract, which the real scope
-    excludes. The qualifier is what makes the category narrow enough to be
-    useful, so it must survive any future edit.
-    """
-    from pdf_analyzer.cuad_classes import CUAD_DESCRIPTIONS
-
-    assert "for matters unrelated to the contract" in CUAD_DESCRIPTIONS["covenant_not_to_sue"]
+    assert set(CUAD_CLASSIFIERS) == set(CUAD_CLASSES)
 
 
-def test_descriptions_are_cuads_own_wording_not_a_paraphrase():
-    """Spot-check verbatim fidelity to category_descriptions.csv. These are
-    the questions CUAD's expert annotators actually answered; a paraphrase
-    silently changes what the pipeline is measuring."""
-    from pdf_analyzer.cuad_classes import CUAD_DESCRIPTIONS
+def test_classifiers_are_element_based_strict_rules():
+    """The definitions were replaced with strict, element-based classifiers.
+    Each states what QUALIFIES and what does NOT, so the model classifies on
+    operative legal effect rather than keywords."""
+    from pdf_analyzer.cuad_classes import CUAD_CLASSIFIERS
 
-    assert CUAD_DESCRIPTIONS["document_name"] == "The name of the contract"
-    assert CUAD_DESCRIPTIONS["parties"] == "The two or more parties who signed the contract"
-    assert (
-        CUAD_DESCRIPTIONS["governing_law"]
-        == "Which state/country's law governs the interpretation of the contract?"
-    )
-    # Official scope includes "whether during the contract or after the
-    # contract ends", which distinguishes a real no-solicit from a passing
-    # mention -- and names employees/contractors specifically, which is what
-    # separates it from No-Solicit of Customers.
-    assert "employees and/or contractors" in CUAD_DESCRIPTIONS["no_solicit_of_employees"]
+    for key, text in CUAD_CLASSIFIERS.items():
+        assert "DOES NOT QUALIFY" in text, f"{key} classifier missing a DOES NOT QUALIFY section"
 
 
-def test_category_definition_composes_scope_then_wording():
-    from pdf_analyzer.cuad_classes import CUAD_DESCRIPTIONS, category_definition
+def test_universal_and_group_rules_present():
+    from pdf_analyzer.cuad_classes import GROUP_DISAMBIGUATION_RULES, STRICT_CLASSIFICATION_RULES
 
-    text = category_definition("non_disparagement")
-    assert text.startswith(CUAD_DESCRIPTIONS["non_disparagement"])
-    assert "Wording to look for:" in text
-    # The empirically-earned half: real contracts say "tarnish", not "disparage".
-    assert "tarnish" in text
+    # The load-bearing universal rule: operative effect, not keywords.
+    assert "operative legal effect" in STRICT_CLASSIFICATION_RULES
+    assert "Do NOT classify based merely on" in STRICT_CLASSIFICATION_RULES
+    # Group disambiguation keeps the most-confused categories apart.
+    assert "NON-COMPETE" in GROUP_DISAMBIGUATION_RULES
+    assert "EXCLUSIVITY" in GROUP_DISAMBIGUATION_RULES
+
+
+def test_non_compete_classifier_requires_operative_restraint():
+    """Regression against the classic false positive: a definition of
+    'Competitor' or a competitor list is NOT a non-compete."""
+    from pdf_analyzer.cuad_classes import CUAD_CLASSIFIERS
+
+    text = CUAD_CLASSIFIERS["non_compete"]
+    assert "operative" in text.lower()
+    assert 'A definition of "Competitor"' in text
+
+
+def test_covenant_not_to_sue_targets_validity_challenge():
+    """The category is chiefly an IP non-challenge covenant, not an ordinary
+    forum/limitation clause."""
+    from pdf_analyzer.cuad_classes import CUAD_CLASSIFIERS
+
+    text = CUAD_CLASSIFIERS["covenant_not_to_sue"]
+    assert "validity" in text
+    assert "Arbitration or forum-selection clauses" in text  # explicitly excluded
+
+
+def test_category_definition_returns_the_strict_classifier():
+    from pdf_analyzer.cuad_classes import CUAD_CLASSIFIERS, category_definition
+
+    assert category_definition("non_disparagement") == CUAD_CLASSIFIERS["non_disparagement"]

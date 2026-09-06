@@ -7,6 +7,7 @@ import { formatDate } from "../lib/format";
 import { ConfidenceBadge, ocrBand, coarseLabel, COARSE_LABELS, CoarseTag, type CoarseLabel } from "../lib/confidence";
 import { FieldValue } from "../components/FieldValue";
 import { PageViewer } from "../components/PageViewer";
+import { ApplicableStatutes } from "../components/ApplicableStatutes";
 import { ErrorState, Skeleton, StatusPill } from "../components/ui";
 
 const PROCESSING = new Set(["queued", "processing"]);
@@ -238,6 +239,9 @@ export default function DocumentDetail() {
                 </section>
               );
             })}
+
+            {/* Per-contract statutory overlay (Singapore statute knowledge store). */}
+            <ApplicableStatutes documentId={id} />
           </div>
 
           {/* Right: page image + overlay, sticky so citations stay in view. */}

@@ -240,6 +240,91 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ message, history }),
     }),
+
+  statutes: () => req<{ clauses: StatuteClauseSummary[] }>("/statutes"),
+  statute: (id: string) => req<StatuteClauseDetail>(`/statutes/${id}`),
+  addStatuteNote: (id: string, body: string) =>
+    req<ClauseAnnotation>(`/statutes/${id}/notes`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ body }),
+    }),
+  verifyStatute: (id: string, action: "agree" | "disagree" | "manual_review", note?: string) =>
+    req<{ id: string; reviewStatus: ReviewStatus; annotations: ClauseAnnotation[] }>(`/statutes/${id}/verify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action, note }),
+    }),
+
+  documentStatutes: (docId: string) =>
+    req<{ documentId: string; jurisdiction: string; docType: string | null; statutes: ContractStatute[] }>(
+      `/documents/${docId}/statutes`,
+    ),
+  addDocStatuteNote: (docId: string, clauseId: string, body: string) =>
+    req<ClauseAnnotation>(`/documents/${docId}/statutes/${clauseId}/notes`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ body }),
+    }),
+  verifyDocStatute: (docId: string, clauseId: string, action: "agree" | "disagree" | "manual_review", note?: string) =>
+    req<{ clauseId: string; reviewStatus: ReviewStatus; annotations: ClauseAnnotation[] }>(
+      `/documents/${docId}/statutes/${clauseId}/verify`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, note }) },
+    ),
+};
+
+export type ContractStatute = {
+  id: string;
+  clauseKey: string;
+  source: string;
+  provision: string;
+  exactWording: string;
+  summary: string | null;
+  status: AiStatus; // per-contract status
+  reason: string | null;
+  authorityBasis: string | null;
+  caseCitation: string | null;
+  targetFields: string[];
+  reviewStatus: ReviewStatus;
+  annotations: ClauseAnnotation[];
+};
+
+export type AiStatus = "Quoted" | "Inferred" | "Evaluation Required" | "NA";
+export type ReviewStatus = "open" | "human_verified" | "overridden" | "manual_review";
+
+export type StatuteClauseSummary = {
+  id: string;
+  clauseKey: string;
+  source: string;
+  provision: string;
+  aiStatus: AiStatus;
+  reviewStatus: ReviewStatus;
+  annotationCount: number;
+};
+
+export type ClauseAnnotation = {
+  id: string;
+  kind: "note" | "agree" | "disagree" | "manual_review";
+  author: string;
+  body: string | null;
+  createdAt: string;
+};
+
+export type StatuteClauseDetail = {
+  id: string;
+  clauseKey: string;
+  source: string;
+  provision: string;
+  exactWording: string;
+  summary: string | null;
+  aiStatus: AiStatus;
+  reviewStatus: ReviewStatus;
+  authorityBasis: string | null;
+  caseCitation: string | null;
+  naReason: string | null;
+  targetFields: string[];
+  applicableContractTypes: string[];
+  annotations: ClauseAnnotation[];
 };
 
 export type ChatResultField = {

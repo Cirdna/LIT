@@ -1,0 +1,381 @@
+[
+  {
+    "id": "suppgoods_s2_title",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 2(1) and 2(2)",
+    "exact_wording": "2.—(1) In a contract for the transfer of goods, other than one to which subsection (3) applies, there is an implied condition on the part of the transferor that in the case of a transfer of the property in the goods he has a right to transfer the property and in the case of an agreement to transfer the property in the goods he will have such a right at the time when the property is to be transferred. (2) In a contract for the transfer of goods, other than one to which subsection (3) applies, there is also an implied warranty that (a) the goods are free, and will remain free until the time when the property is to be transferred, from any charge or encumbrance not disclosed or known to the transferee before the contract is made; and (b) the transferee will enjoy quiet possession of the goods except so far as it may be disturbed by the owner or other person entitled to the benefit of any charge or encumbrance so disclosed or known.",
+    "summary": "Mirrors Sale of Goods Act s.12 for non-sale, non-hire-purchase contracts under which property in goods passes (e.g. a services/work-and-materials contract): implied right to transfer title and quiet possession free of undisclosed encumbrances, unless it is a limited-title transfer under s.2(3).",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services",
+      "contract involves the transfer of property in goods to the counterparty as part of the services (e.g. supply-and-install, work and materials)",
+      "contract is not itself a sale of goods, hire-purchase agreement, gratuitous deed, or security/mortgage arrangement (s.1(2) exclusions)",
+      "no express clause on title/encumbrances/quiet possession extracted",
+      "not a limited-title transfer under s.2(3)"
+    ],
+    "target_fields": [
+      "title_warranty",
+      "quiet_possession",
+      "encumbrances"
+    ],
+    "trigger_keywords": [
+      "title",
+      "transfer of property",
+      "encumbrance",
+      "quiet possession"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "title_warranty",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures an implied title/right-to-sell warranty for goods; this chunk cannot fire against a CUAD-only extraction until a supplemental extraction category is added."
+      },
+      {
+        "target_field": "quiet_possession",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures quiet-possession warranties; same gap as title_warranty."
+      },
+      {
+        "target_field": "encumbrances",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures undisclosed-encumbrance findings on goods."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s3_description",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 3(1) and 3(2)",
+    "exact_wording": "3.—(1) This section applies where, under a contract for the transfer of goods, the transferor transfers or agrees to transfer the property in the goods by description. (2) In such a case, there is an implied condition that the goods will correspond with the description.",
+    "summary": "Mirrors Sale of Goods Act s.13: where goods are transferred by description under a services/transfer-of-goods contract, there is an implied condition of correspondence with the description.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services",
+      "contract involves transfer of property in goods by description",
+      "no express clause on description-conformity extracted"
+    ],
+    "target_fields": [
+      "description_conformity"
+    ],
+    "trigger_keywords": [
+      "description",
+      "correspond"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "description_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures goods-description conformity (this is a goods-quality concept, distinct from CUAD's document-level 'document_name' or IP-description fields)."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s4_2_satisfactory_quality",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 4(2) and 4(2A)",
+    "exact_wording": "4.—(2) Where, under such a contract, the transferor transfers the property in goods in the course of a business, there is an implied condition that the goods supplied under the contract are of satisfactory quality. (2A) For the purposes of this section and section 5, goods are of satisfactory quality if they meet the standard that a reasonable person would regard as satisfactory, taking account of any description of the goods, the price (if relevant) and all the other relevant circumstances.",
+    "summary": "Mirrors Sale of Goods Act s.14(2)/(2A): a business transferor impliedly warrants satisfactory quality of goods supplied under a services/transfer-of-goods contract, subject to the disclosed-defect/examination carve-outs in s.4(3).",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services",
+      "transferor transfers goods in the course of a business",
+      "no express clause on quality extracted",
+      "not falling within the s.4(3) carve-outs"
+    ],
+    "target_fields": [
+      "satisfactory_quality"
+    ],
+    "trigger_keywords": [
+      "quality",
+      "satisfactory",
+      "defect"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s4_5_fitness_for_purpose",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 4(4), 4(5) and 4(6)",
+    "exact_wording": "(4) Subsection (5) applies where, under a contract for the transfer of goods, the transferor transfers the property in goods in the course of a business and the transferee, expressly or by implication, makes known (a) to the transferor; or (b) where the consideration or part of the consideration for the transfer is a sum payable by instalments and the goods were previously sold by a credit-broker to the transferor, to that credit-broker, any particular purpose for which the goods are being acquired. (5) In that case there is, subject to subsection (6), an implied condition that the goods supplied under the contract are reasonably fit for that purpose, whether or not that is a purpose for which such goods are commonly supplied. (6) Subsection (5) does not apply where the circumstances show that the transferee does not rely, or that it is unreasonable for him to rely, on the skill or judgment of the transferor or credit-broker.",
+    "summary": "Mirrors Sale of Goods Act s.14(3): fitness for a particular purpose made known by the transferee is impliedly warranted, unless reliance on the transferor's skill/judgment would be absent or unreasonable.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services",
+      "transferor transfers goods in the course of a business",
+      "transferee made known a particular purpose",
+      "no express clause on fitness for purpose extracted",
+      "not a case of no/unreasonable reliance under s.4(6)"
+    ],
+    "target_fields": [
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "fitness for purpose",
+      "fit for purpose",
+      "particular purpose"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s5_sample",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 5(1) and 5(2)",
+    "exact_wording": "5.—(1) This section applies where, under a contract for the transfer of goods, the transferor transfers or agrees to transfer the property in the goods by reference to a sample. (2) In such a case, there is an implied condition (a) that the bulk will correspond with the sample in quality; (b) that the transferee will have a reasonable opportunity of comparing the bulk with the sample; and (c) that the goods will be free from any defect, making their quality unsatisfactory, which would not be apparent on reasonable examination of the sample.",
+    "summary": "Mirrors Sale of Goods Act s.15: where goods are transferred by reference to a sample under a services/transfer-of-goods contract, the bulk must correspond to sample quality, the transferee must get a reasonable opportunity to compare, and hidden defects not apparent on reasonable sample examination are not excused.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "services"
+    ],
+    "applicability_conditions": [
+      "contract classified as services",
+      "contract involves transfer of goods by reference to a sample",
+      "no express clause on sample-conformity extracted"
+    ],
+    "target_fields": [
+      "sample_conformity"
+    ],
+    "trigger_keywords": [
+      "sample",
+      "bulk"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "sample_conformity",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures sale-by-sample conformity."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s7_hire_title",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 7(1) and 7(2)",
+    "exact_wording": "7.—(1) In a contract for the hire of goods, there is an implied condition on the part of the bailor that in the case of a bailment he has a right to transfer possession of the goods by way of hire for the period of the bailment and in the case of an agreement to bail he will have such a right at the time of the bailment. (2) In a contract for the hire of goods, there is also an implied warranty that the bailee will enjoy quiet possession of the goods for the period of the bailment except so far as the possession may be disturbed by the owner or other person entitled to the benefit of any charge or encumbrance disclosed or known to the bailee before the contract is made.",
+    "summary": "In a goods-hire (equipment lease/rental) contract, the bailor impliedly warrants a right to give possession by way of hire and the bailee's quiet possession for the hire period, free of undisclosed encumbrances.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "goods_hire"
+    ],
+    "applicability_conditions": [
+      "contract classified as goods_hire",
+      "no express clause on right-to-hire/quiet possession extracted"
+    ],
+    "target_fields": [
+      "title_warranty",
+      "quiet_possession"
+    ],
+    "trigger_keywords": [
+      "hire",
+      "bailor",
+      "bailee",
+      "quiet possession"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: reclassified from 'lease' to a dedicated 'goods_hire' contract type (new subcategory added to the Sec 2 classification gate taxonomy) to stop this chunk from being eligible to fire on real-property leases. The original 'lease' mapping was flagged by this chunk's own prior note as an imprecise best-fit; this resolves it.",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "title_warranty",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures an implied title/right-to-sell warranty for goods; this chunk cannot fire against a CUAD-only extraction until a supplemental extraction category is added."
+      },
+      {
+        "target_field": "quiet_possession",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures quiet-possession warranties; same gap as title_warranty."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s9_2_satisfactory_quality_hire",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 9(2) and 9(2A)",
+    "exact_wording": "9.—(2) Where, under such a contract, the bailor bails goods in the course of a business, there is an implied condition that the goods supplied under the contract are of satisfactory quality. (2A) For the purposes of this section and section 10, goods are of satisfactory quality if they meet the standard that a reasonable person would regard as satisfactory, taking account of any description of the goods, the consideration for the bailment (if relevant) and all the other relevant circumstances.",
+    "summary": "Mirrors Sale of Goods Act s.14(2) for goods-hire contracts: a business bailor impliedly warrants satisfactory quality, subject to the disclosed-defect/examination carve-outs in s.9(3).",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "goods_hire"
+    ],
+    "applicability_conditions": [
+      "contract classified as goods_hire",
+      "bailor bails goods in the course of a business",
+      "no express clause on quality extracted",
+      "not falling within the s.9(3) carve-outs"
+    ],
+    "target_fields": [
+      "satisfactory_quality"
+    ],
+    "trigger_keywords": [
+      "quality",
+      "satisfactory",
+      "hire"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: reclassified from 'lease' to a dedicated 'goods_hire' contract type (new subcategory added to the Sec 2 classification gate taxonomy) to stop this chunk from being eligible to fire on real-property leases. The original 'lease' mapping was flagged by this chunk's own prior note as an imprecise best-fit; this resolves it.",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "satisfactory_quality",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures satisfactory-quality findings for goods."
+      }
+    ]
+  },
+  {
+    "id": "suppgoods_s9_4_fitness_hire",
+    "category": "statute",
+    "source": "Supply of Goods Act 1982",
+    "provision": "Sections 9(4), 9(5) and 9(6)",
+    "exact_wording": "(4) Subsection (5) applies where, under a contract for the hire of goods, the bailor bails goods in the course of a business and the bailee, expressly or by implication, makes known (a) to the bailor in the course of negotiations conducted by him in relation to the making of the contract; or (b) to a credit-broker in the course of negotiations conducted by that broker in relation to goods sold by him to the bailor before forming the subject matter of the contract, any particular purpose for which the goods are being bailed. (5) In that case there is, subject to subsection (6), an implied condition that the goods supplied under the contract are reasonably fit for that purpose, whether or not that is a purpose for which such goods are commonly supplied. (6) Subsection (5) does not apply where the circumstances show that the bailee does not rely, or that it is unreasonable for him to rely, on the skill or judgment of the bailor or credit-broker.",
+    "summary": "Mirrors Sale of Goods Act s.14(3) for goods-hire contracts: fitness for a purpose made known by the bailee is impliedly warranted absent an absence of, or unreasonable, reliance.",
+    "role_type": "role_a_default",
+    "applicable_contract_types": [
+      "goods_hire"
+    ],
+    "applicability_conditions": [
+      "contract classified as goods_hire",
+      "bailor bails goods in the course of a business",
+      "bailee made known a particular purpose",
+      "no express clause on fitness for purpose extracted",
+      "not a case of no/unreasonable reliance under s.9(6)"
+    ],
+    "target_fields": [
+      "fitness_for_purpose"
+    ],
+    "trigger_keywords": [
+      "fitness for purpose",
+      "hire"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": "v2 revision: reclassified from 'lease' to a dedicated 'goods_hire' contract type (new subcategory added to the Sec 2 classification gate taxonomy) to stop this chunk from being eligible to fire on real-property leases. The original 'lease' mapping was flagged by this chunk's own prior note as an imprecise best-fit; this resolves it.",
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "fitness_for_purpose",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "No CUAD category captures fitness-for-particular-purpose findings for goods."
+      }
+    ]
+  }
+]

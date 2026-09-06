@@ -69,12 +69,28 @@ export async function retrieve(workspaceId: string, params: RetrievalParams): Pr
     // Contracts only unless a specific docType was asked for.
     docType: params.docType ?? { notIn: ["not_a_contract", "invoice"] },
   };
-  if (params.counterparty) where.counterparty = { contains: params.counterparty, mode: "insensitive" };
-  if (params.freeText)
+
+  // A party/name term must match the counterparty denorm, the filename, AND the
+  // extracted `parties` clause. The counterparty column only holds one side of
+  // the deal, so a query naming the OTHER party (or the contract's own name,
+  // e.g. "Armstrong") would otherwise miss — which is exactly the bug this fixes.
+  const nameTerm = params.counterparty ?? params.freeText;
+  if (nameTerm) {
+    const partyRows = await prisma.extractedField.findMany({
+      where: {
+        fieldKey: "parties",
+        valueVerbatim: { contains: nameTerm, mode: "insensitive" },
+        document: { workspaceId },
+      },
+      select: { documentId: true },
+    });
+    const partyDocIds = partyRows.map((r) => r.documentId);
     where.OR = [
-      { filename: { contains: params.freeText, mode: "insensitive" } },
-      { counterparty: { contains: params.freeText, mode: "insensitive" } },
+      { counterparty: { contains: nameTerm, mode: "insensitive" } },
+      { filename: { contains: nameTerm, mode: "insensitive" } },
+      ...(partyDocIds.length ? [{ id: { in: partyDocIds } }] : []),
     ];
+  }
 
   let docs = await prisma.document.findMany({
     where: where as never,

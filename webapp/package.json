@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "stub": "tsx scripts/stub-worker.ts",
     "seed": "tsx prisma/seed.ts",
+    "seed:statutes": "tsx scripts/seed-statutes.ts",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",

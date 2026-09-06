@@ -1,0 +1,205 @@
+[
+  {
+    "id": "frustrated_s3_3_express_provision_override",
+    "category": "statute",
+    "source": "Frustrated Contracts Act 1959",
+    "provision": "Section 3(3)",
+    "exact_wording": "(3) Where any contract to which this Act applies contains any provision which, upon the true construction of the contract, is intended to have effect in the event of circumstances arising which operate, or would but for that provision operate, to frustrate the contract, or is intended to have effect whether such circumstances arise or not, the court shall give effect to that provision and shall only give effect to section 2 to such extent, if any, as appears to the court to be consistent with that provision.",
+    "summary": "Where the contract contains its own force majeure / frustration-consequences clause, the court gives effect to that clause instead of (or ahead of) the Act's statutory loss-allocation scheme in s.2 — this is the condition that gates whether s.2 is even relevant.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "no force majeure, hardship, or frustration-consequences clause is found anywhere in the contract",
+      "the contract is not one of the categories excluded by s.3(5) (most charterparties, contracts for carriage of goods by sea, insurance contracts other than as provided by s.2(6), or contracts for sale of specific goods that perish, within Sale of Goods Act s.7)"
+    ],
+    "target_fields": [
+      "force_majeure",
+      "frustration_default"
+    ],
+    "trigger_keywords": [
+      "force majeure",
+      "frustration",
+      "frustrated"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "force_majeure",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "CUAD has no force majeure / frustration-clause category. This trigger's core applicability condition ('no FM clause found') cannot currently be checked from a CUAD-only extraction."
+      },
+      {
+        "target_field": "frustration_default",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "Same gap as force_majeure -- no CUAD category to check against."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "frustrated_s2_2_3_adjustment_sums_paid",
+    "category": "statute",
+    "source": "Frustrated Contracts Act 1959",
+    "provision": "Sections 2(2) and 2(3)",
+    "exact_wording": "(2) Subject to subsection (3), all sums paid or payable to any party in pursuance of the contract before the time when the parties were so discharged (referred to in this Act as the time of discharge) shall, in the case of sums so paid, be recoverable from him as money received by him for the use of the party by whom the sums were paid, and, in the case of sums so payable, cease to be so payable. (3) If the party to whom the sums were so paid or payable under subsection (2) incurred expenses before the time of discharge in, or for the purpose of, the performance of the contract, the court may, if it considers it just to do so having regard to all the circumstances of the case, allow him to retain or, as the case may be, recover the whole or any part of the sums so paid or payable, not being an amount in excess of the expenses so incurred.",
+    "summary": "The statutory default: sums paid before discharge are generally recoverable (and sums payable cease to be payable), but the court may allow the recipient to retain or recover an amount up to its incurred expenses if it considers this just.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "services",
+      "lease",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "no force majeure or frustration-consequences clause is found in the contract (s.3(3))",
+      "the contract is not excluded under s.3(5)",
+      "flagged only as background information on the statutory default loss-allocation position, not a prediction of outcome"
+    ],
+    "target_fields": [
+      "frustration_default"
+    ],
+    "trigger_keywords": [
+      "sums paid",
+      "recoverable",
+      "frustrated",
+      "discharge"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "frustration_default",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "Same gap as force_majeure -- no CUAD category to check against."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "frustrated_s2_4_valuable_benefit",
+    "category": "statute",
+    "source": "Frustrated Contracts Act 1959",
+    "provision": "Section 2(4)",
+    "exact_wording": "(4) Where any party to the contract has, by reason of anything done by any other party to the contract in, or for the purpose of, the performance of the contract, obtained a valuable benefit (other than a payment of money to which subsection (2) applies) before the time of discharge, there shall be recoverable from him by that other party such sum (if any), not exceeding the value of that benefit to the party obtaining it, as the court considers just, having regard to all the circumstances of the case and, in particular (a) the amount of any expenses incurred before the time of discharge by the benefited party in, or for the purpose of, the performance of the contract, including any sums paid or payable by him to any other party in pursuance of the contract and retained or recoverable by that party under subsection (3); and (b) the effect, in relation to that benefit, of the circumstances giving rise to the frustration of the contract.",
+    "summary": "Where a party obtained a non-monetary valuable benefit (e.g. partly completed work or services) before discharge, the court may order a just sum not exceeding that benefit's value, weighing the benefited party's own incurred expenses and how the frustrating event affected the benefit.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "services",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "no force majeure or frustration-consequences clause is found in the contract (s.3(3))",
+      "the contract is not excluded under s.3(5)",
+      "part performance conferring a non-monetary benefit is a realistic feature of the contract (e.g. a services or works contract)"
+    ],
+    "target_fields": [
+      "frustration_default"
+    ],
+    "trigger_keywords": [
+      "valuable benefit",
+      "frustrated",
+      "just sum"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "frustration_default",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "Same gap as force_majeure -- no CUAD category to check against."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  },
+  {
+    "id": "frustrated_s3_5_scope_exclusions",
+    "category": "statute",
+    "source": "Frustrated Contracts Act 1959",
+    "provision": "Section 3(5)",
+    "exact_wording": "(5) This Act shall not apply (a) to any charterparty, except a time charterparty or a charterparty by way of demise, or to any contract (other than a charterparty) for the carriage of goods by sea; (b) to any contract of insurance, except as is provided by section 2(6); or (c) to any contract to which section 7 of the Sale of Goods Act 1979 (which avoids contracts for the sale of specific goods which perish before the risk has passed to the buyer) applies, or to any other contract for the sale, or for the sale and delivery, of specific goods, where the contract is frustrated by reason of the fact that the goods have perished.",
+    "summary": "The Act does not apply at all to most charterparties or sea-carriage-of-goods contracts, to insurance contracts (save for s.2(6)), or to sale-of-specific-goods contracts frustrated by the goods perishing (which fall instead under Sale of Goods Act s.7). This is a full scope exclusion to check before any s.2 trigger fires.",
+    "role_type": "role_b_validator",
+    "applicable_contract_types": [
+      "sale_of_goods",
+      "distribution",
+      "other_commercial",
+      "ip_agreement"
+    ],
+    "applicability_conditions": [
+      "the contract is (or closely resembles) a charterparty, a sea carriage-of-goods contract, an insurance contract, or a specific-goods sale frustrated by the goods perishing"
+    ],
+    "target_fields": [
+      "frustration_default"
+    ],
+    "trigger_keywords": [
+      "charterparty",
+      "carriage of goods by sea",
+      "insurance",
+      "specific goods",
+      "perished"
+    ],
+    "authority_basis": "statute_text",
+    "case_citation": null,
+    "verified_as_at": "2026-09-06",
+    "verified_by": "draft_pending_review",
+    "notes": null,
+    "jurisdiction_gate": {
+      "condition": "Contract's extracted governing_law clause designates Singapore law, OR the contract is silent/unresolved as to governing law. If governing law is expressly a jurisdiction other than Singapore (e.g. Delaware, England and Wales, Hong Kong) and Singapore law is not also specified as concurrently or alternatively applicable, this chunk must not fire regardless of contract type or clause content.",
+      "on_fail": "NA",
+      "na_reason": "governing_law_excluded",
+      "rationale": "Sample contract (Armstrong Flooring / AFI Licensing IP Agreement) is expressly governed by Delaware law with a conflict-of-laws override. Prior chunk versions had no jurisdiction check at all, meaning every SG statutory chunk in this knowledge store would have fired on a document with zero nexus to Singapore law -- the same class of defect as an inapplicable-statute citation under Sec 1 of the engine spec, just on a different axis (jurisdiction rather than contract type)."
+    },
+    "extraction_schema_status": [
+      {
+        "target_field": "frustration_default",
+        "status": "cuad_gap",
+        "cuad_category": null,
+        "note": "Same gap as force_majeure -- no CUAD category to check against."
+      }
+    ],
+    "engine_revision_notes": "v2 revision: added 'ip_agreement' to applicable_contract_types. Sample contract review (Armstrong Flooring / AFI Licensing Intellectual Property Agreement) showed this contract type has no home in the original taxonomy (sale_of_goods/services/lease/nda/distribution/employment/other_unclassified) despite containing CRTPA-relevant indemnification and third-party-beneficiary language. Added as a new subcategory per engine spec Sec 2 rather than folding into 'other_commercial', since IP agreements have a distinct statutory profile (notably: categorically outside UCTA ss.2-4 per the First Schedule)."
+  }
+]
