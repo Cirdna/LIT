@@ -58,8 +58,65 @@ model Document {
   calendarEvents CalendarEvent[]
   jobs           Job[]
 
+  // Invoice side (doc_type = 'invoice')
+  invoiceHeader          InvoiceHeader?
+  invoiceLineItems       InvoiceLineItem[]
+  invoiceMatches         InvoiceMatch[]    @relation("InvoiceToMatch")
+  contractInvoiceMatches InvoiceMatch[]    @relation("ContractToMatch")
+
   @@unique([workspaceId, sha256])
   @@map("documents")
+}
+
+// Invoice reconciliation (Feature 3). An invoice is a Document with
+// doc_type='invoice'; its extracted header/line items and the match result live
+// here. Contracts are untouched.
+model InvoiceHeader {
+  documentId     String    @id @map("document_id") @db.Uuid
+  billingFrom    String?   @map("billing_from")
+  billingTo      String?   @map("billing_to")
+  invoiceDate    DateTime? @map("invoice_date") @db.Date
+  invoiceNumber  String?   @map("invoice_number")
+  currency       String?
+  total          Float?    @db.Real
+  confidenceTier String    @map("confidence_tier") // grounding of the header read
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_headers")
+}
+
+model InvoiceLineItem {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId    String   @map("document_id") @db.Uuid
+  description   String
+  quantity      Float?   @db.Real
+  amount        Float?   @db.Real
+  anchorLineIds String[] @default([]) @map("anchor_line_ids")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("invoice_line_items")
+}
+
+model InvoiceMatch {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId          String   @map("invoice_id") @db.Uuid
+  contractDocumentId String?  @map("contract_document_id") @db.Uuid
+  // HIGH_CONFIDENCE_MATCH | MISSING_CONTRACT_ROGUE | MULTIPLE_CONTRACTS_REVIEW | DATE_MISMATCH_REVIEW
+  status             String
+  confidenceTier     String   @map("confidence_tier")
+  reasons            Json     @default("[]")
+  matchedOn          Json?    @map("matched_on")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invoice  Document  @relation("InvoiceToMatch", fields: [invoiceId], references: [id], onDelete: Cascade)
+  contract Document? @relation("ContractToMatch", fields: [contractDocumentId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@map("invoice_matches")
 }
 
 model DocumentText {

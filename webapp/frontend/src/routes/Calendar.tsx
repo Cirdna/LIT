@@ -6,7 +6,16 @@ import { BAND_LABELS, BAND_ORDER, bandFor, formatDate, relativeDays, type Band }
 import { ConfidenceBadge, tierRank } from "../lib/confidence";
 import { EmptyState, ErrorState, Skeleton } from "../components/ui";
 
-type Range = "90" | "180" | "all";
+type Horizon = "today" | "week" | "30" | "60" | "90";
+
+// Forward-looking quick filters (UI-4): each is a horizon of N days from today.
+const HORIZONS: { key: Horizon; label: string; days: number }[] = [
+  { key: "today", label: "Today", days: 0 },
+  { key: "week", label: "This week", days: 7 },
+  { key: "30", label: "30 days", days: 30 },
+  { key: "60", label: "60 days", days: 60 },
+  { key: "90", label: "90 days", days: 90 },
+];
 
 function addDays(iso: string, days: number): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -16,7 +25,7 @@ function addDays(iso: string, days: number): string {
 
 export default function Calendar() {
   const qc = useQueryClient();
-  const [range, setRange] = useState<Range>("90"); // default is what gets demoed
+  const [horizon, setHorizon] = useState<Horizon>("90"); // default is what gets demoed
   const [confirmedOnly, setConfirmedOnly] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
 
@@ -54,18 +63,19 @@ export default function Calendar() {
   if (cal.isError) return <ErrorState message={(cal.error as Error).message} />;
 
   const { today, events } = cal.data!;
-  const horizon = range === "all" ? "2999-01-01" : addDays(today, range === "90" ? 90 : 180);
+  const days = HORIZONS.find((h) => h.key === horizon)!.days;
+  const horizonIso = addDays(today, days); // strictly forward: today → today + N
 
   const visible = events.filter((e) => {
     if (!showDismissed && e.status === "dismissed") return false;
     const eff = e.actionByDate ?? e.eventDate;
-    return eff <= horizon;
+    return eff <= horizonIso; // overdue (eff < today) is always ≤ horizon, so stays visible
   });
 
   const byBand = new Map<Band, CalendarEventDTO[]>();
   for (const e of visible) {
     const b = bandFor(today, e.actionByDate ?? e.eventDate);
-    if (range !== "all" && b === "later") continue;
+    if (b === "later") continue; // never beyond the chosen horizon
     (byBand.get(b) ?? byBand.set(b, []).get(b)!).push(e);
   }
 
@@ -78,13 +88,13 @@ export default function Calendar() {
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <div className="flex overflow-hidden rounded border border-rule">
-            {(["90", "180", "all"] as Range[]).map((r) => (
+            {HORIZONS.map((h) => (
               <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 ${range === r ? "bg-navy text-white" : "bg-surface text-muted hover:bg-paper"}`}
+                key={h.key}
+                onClick={() => setHorizon(h.key)}
+                className={`px-3 py-1.5 ${horizon === h.key ? "bg-navy text-white" : "bg-surface text-muted hover:bg-paper"}`}
               >
-                {r === "all" ? "All" : `${r} days`}
+                {h.label}
               </button>
             ))}
           </div>

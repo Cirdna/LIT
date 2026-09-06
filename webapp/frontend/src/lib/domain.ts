@@ -100,6 +100,7 @@ export const DOC_TYPE_LABELS: Record<string, string> = {
   msa: "Master services",
   distribution: "Distribution",
   employment: "Employment",
+  invoice: "Invoice",
   other: "Other",
   not_a_contract: "Not a contract",
 };

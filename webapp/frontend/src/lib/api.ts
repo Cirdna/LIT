@@ -79,6 +79,33 @@ export type DocumentDetail = DocumentSummary & {
   fields: FieldDTO[];
   segments: SegmentDTO[];
   job: JobStatus;
+  invoice: InvoiceDTO | null;
+};
+
+export type InvoiceMatchStatus =
+  | "HIGH_CONFIDENCE_MATCH"
+  | "MISSING_CONTRACT_ROGUE"
+  | "MULTIPLE_CONTRACTS_REVIEW"
+  | "DATE_MISMATCH_REVIEW";
+
+export type InvoiceDTO = {
+  header: {
+    billingFrom: string | null;
+    billingTo: string | null;
+    invoiceDate: string | null;
+    invoiceNumber: string | null;
+    currency: string | null;
+    total: number | null;
+    confidenceTier: ConfidenceTier;
+  };
+  lineItems: { id: string; description: string; quantity: number | null; amount: number | null }[];
+  match: {
+    status: InvoiceMatchStatus;
+    confidenceTier: ConfidenceTier;
+    reasons: string[];
+    matchedOn: unknown;
+    contract: { id: string; filename: string; counterparty: string | null } | null;
+  } | null;
 };
 
 export type CalendarEventDTO = {
@@ -203,6 +230,48 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ conflictId }),
     }),
+
+  benchmarks: (documentId: string) =>
+    req<{ documentId: string; benchmarks: BenchmarkDTO[] }>(`/benchmark?documentId=${documentId}`),
+
+  chat: (message: string, history: { role: "user" | "assistant"; content: string }[]) =>
+    req<ChatResponse>("/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message, history }),
+    }),
+};
+
+export type ChatResultField = {
+  fieldKey: string;
+  value: string | null;
+  normalized: unknown;
+  confidenceTier: ConfidenceTier;
+  clauseLabel: string | null;
+  absenceReason: string | null;
+};
+export type ChatResult = {
+  documentId: string;
+  filename: string;
+  counterparty: string | null;
+  docType: string | null;
+  fields: ChatResultField[];
+};
+export type ChatResponse =
+  | { status: "need_clarification"; question: string }
+  | { status: "answered"; answer: string; results: ChatResult[]; params?: unknown };
+
+export type BenchmarkDTO = {
+  category: string;
+  label: string;
+  unit: string;
+  direction: "higher_better" | "lower_better" | "neutral";
+  value: number;
+  average: number;
+  deviation: number;
+  percentWorse: number;
+  sampleSize: number;
+  risk: "green" | "yellow" | "red";
 };
 
 export const pageImageUrl = (documentId: string, pageNumber: number) =>

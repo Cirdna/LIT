@@ -74,6 +74,40 @@ export function tierRank(t: ConfidenceTier): number {
   return TIER_META[t].rank;
 }
 
+// The coarse three-label view (quoted / inferred / NA) requested for the compact
+// tags and the label filter. It is DERIVED from the five tiers, never a
+// replacement — the full badge still tells the precise story. Colour still
+// travels with a glyph, so it survives colour-blindness and a projector.
+export type CoarseLabel = "quoted" | "inferred" | "NA";
+
+export function coarseLabel(field: FieldDTO): CoarseLabel {
+  if (field.valueVerbatim == null) return "NA"; // absent (not_present/not_found/illegible)
+  if (field.confidenceTier === "unverified") return "NA"; // suspected error
+  if (field.confidenceTier === "verbatim" || field.confidenceTier === "normalised") return "quoted";
+  return "inferred"; // assembled | inferred
+}
+
+export const COARSE_META: Record<CoarseLabel, { label: string; glyph: string; text: string; bg: string; border: string }> = {
+  quoted: { label: "quoted", glyph: "✓", text: "text-ok", bg: "bg-okbg", border: "border-ok/40" },
+  inferred: { label: "inferred", glyph: "~", text: "text-warn", bg: "bg-warnbg", border: "border-warn/50" },
+  NA: { label: "NA", glyph: "—", text: "text-alert", bg: "bg-alertbg", border: "border-alert/50" },
+};
+
+export const COARSE_LABELS: CoarseLabel[] = ["quoted", "inferred", "NA"];
+
+export function CoarseTag({ label }: { label: CoarseLabel }) {
+  const m = COARSE_META[label];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded border ${m.border} ${m.bg} ${m.text} px-1.5 py-0.5 text-xs font-medium`}
+      title={`Confidence: ${m.label}`}
+    >
+      <span aria-hidden className="font-bold leading-none">{m.glyph}</span>
+      {m.label}
+    </span>
+  );
+}
+
 export function ConfidenceBadge({ tier, size = "md" }: { tier: ConfidenceTier; size?: "sm" | "md" }) {
   const m = TIER_META[tier];
   const pad = size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-sm";

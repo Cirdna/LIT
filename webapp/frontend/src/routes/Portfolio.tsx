@@ -72,27 +72,32 @@ export default function Portfolio() {
         <Uploader variant="compact" />
       </div>
 
-      {summary && (
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <SummaryStat label="Contracts tracked" value={summary.contractsTracked} />
-          <SummaryStat
-            label="Actions in 90 days"
-            value={summary.actionsNext90}
-            tone={summary.overdue > 0 ? "alert" : "default"}
-            hint={summary.overdue > 0 ? `${summary.overdue} overdue` : undefined}
-          />
-          <SummaryStat
-            label="Conflicts found"
-            value={summary.conflictsFound}
-            tone={summary.conflictsFound > 0 ? "warn" : "default"}
-          />
-          <SummaryStat
-            label="Need review"
-            value={summary.documentsNeedingReview}
-            tone={summary.documentsNeedingReview > 0 ? "warn" : "default"}
-          />
-        </div>
-      )}
+      <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_20rem]">
+        {summary ? (
+          <div className="grid grid-cols-2 gap-3 self-start md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+            <SummaryStat label="Contracts tracked" value={summary.contractsTracked} />
+            <SummaryStat
+              label="Actions in 90 days"
+              value={summary.actionsNext90}
+              tone={summary.overdue > 0 ? "alert" : "default"}
+              hint={summary.overdue > 0 ? `${summary.overdue} overdue` : undefined}
+            />
+            <SummaryStat
+              label="Conflicts found"
+              value={summary.conflictsFound}
+              tone={summary.conflictsFound > 0 ? "warn" : "default"}
+            />
+            <SummaryStat
+              label="Need review"
+              value={summary.documentsNeedingReview}
+              tone={summary.documentsNeedingReview > 0 ? "warn" : "default"}
+            />
+          </div>
+        ) : (
+          <div />
+        )}
+        <UpcomingActions today={today} />
+      </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <FilterChip on={filter === "all"} onClick={() => setFilter("all")}>
@@ -162,7 +167,7 @@ function DocRow({ doc, today }: { doc: DocumentSummary; today: string }) {
           <span className="font-medium text-ink">{doc.filename}</span>
         )}
         {notContract && (
-          <div className="mt-0.5 text-sm text-muted">Looks like an invoice, not an agreement. Not analysed.</div>
+          <div className="mt-0.5 text-sm text-muted">Not a contract — no terms were extracted.</div>
         )}
         {doc.status === "unsupported" && doc.error && (
           <div className="mt-0.5 text-sm text-alert">{doc.error}</div>
@@ -222,6 +227,91 @@ function ProcessingCell({ docId }: { docId: string }) {
         <div className="h-full bg-navy transition-all" style={{ width: `${Math.max(6, pct)}%` }} />
       </div>
     </div>
+  );
+}
+
+// Forward-looking action widget (UI-4): the "top right corner" dashboard piece.
+// Surfaces what expires / auto-renews / needs notice, by the date action is due,
+// with the exact quick-filter horizons the spec calls for.
+const WIDGET_HORIZONS: { key: string; label: string; days: number }[] = [
+  { key: "today", label: "Today", days: 0 },
+  { key: "week", label: "This week", days: 7 },
+  { key: "30", label: "30d", days: 30 },
+  { key: "60", label: "60d", days: 60 },
+  { key: "90", label: "90d", days: 90 },
+];
+
+function widgetAddDays(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function UpcomingActions({ today }: { today: string }) {
+  const [days, setDays] = useState(90);
+  const params = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set("status", "active");
+    p.set("to", "2999-01-01");
+    return p;
+  }, []);
+  const cal = useQuery({ queryKey: ["calendar", params.toString()], queryFn: () => api.calendar(params) });
+
+  const events = cal.data?.events ?? [];
+  const horizonIso = widgetAddDays(today, days); // strictly forward: today → today + N
+  const upcoming = events
+    .filter((e) => e.status !== "dismissed")
+    .map((e) => ({ e, eff: e.actionByDate ?? e.eventDate }))
+    .filter((x) => x.eff <= horizonIso)
+    .sort((a, b) => a.eff.localeCompare(b.eff));
+  const overdue = upcoming.filter((x) => x.eff < today).length;
+
+  return (
+    <aside className="panel self-start p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-ink">Upcoming actions</h2>
+        <Link to="/calendar" className="text-xs text-navy hover:underline">
+          View all →
+        </Link>
+      </div>
+      <div className="mb-2 flex flex-wrap gap-1">
+        {WIDGET_HORIZONS.map((h) => (
+          <button
+            key={h.key}
+            onClick={() => setDays(h.days)}
+            className={`rounded border px-1.5 py-0.5 text-xs ${
+              days === h.days ? "border-navy bg-navy text-white" : "border-rule bg-surface text-muted hover:bg-paper"
+            }`}
+          >
+            {h.label}
+          </button>
+        ))}
+      </div>
+      {overdue > 0 && (
+        <div className="mb-2 rounded border border-alert/40 bg-alertbg px-2 py-1 text-xs font-medium text-alert">
+          {overdue} overdue
+        </div>
+      )}
+      {upcoming.length === 0 ? (
+        <p className="py-2 text-sm text-muted">Nothing due in this window.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {upcoming.slice(0, 6).map(({ e, eff }) => (
+            <li key={e.id} className="flex items-baseline justify-between gap-2 text-sm">
+              <Link to={`/documents/${e.documentId}`} className="min-w-0 flex-1 truncate text-ink hover:underline" title={e.title}>
+                {e.title}
+              </Link>
+              <span className={`tnum whitespace-nowrap text-xs ${eff < today ? "font-semibold text-alert" : "text-muted"}`}>
+                {formatDate(eff)}
+              </span>
+            </li>
+          ))}
+          {upcoming.length > 6 && (
+            <li className="pt-1 text-xs text-faint">+{upcoming.length - 6} more</li>
+          )}
+        </ul>
+      )}
+    </aside>
   );
 }
 

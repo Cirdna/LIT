@@ -1,7 +1,9 @@
 // Dates as a person reads them, and the "how long until I must act" arithmetic
 // the calendar is built around.
 
-const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+// Strict DD MMM YYYY, e.g. "01 Nov 2026". Native Intl — no date library is
+// installed, and this is the single source of truth for dates across the UI.
+const fmt = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
 export function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -26,13 +28,14 @@ export function relativeDays(todayIso: string, targetIso: string): string {
   return `in ${d} days`;
 }
 
-export type Band = "overdue" | "this_week" | "next_30" | "in_90" | "later";
+export type Band = "overdue" | "this_week" | "next_30" | "next_60" | "in_90" | "later";
 
 export function bandFor(todayIso: string, effectiveIso: string): Band {
   const d = daysBetween(todayIso, effectiveIso);
   if (d < 0) return "overdue";
   if (d <= 7) return "this_week";
   if (d <= 30) return "next_30";
+  if (d <= 60) return "next_60";
   if (d <= 90) return "in_90";
   return "later";
 }
@@ -41,8 +44,9 @@ export const BAND_LABELS: Record<Band, string> = {
   overdue: "Overdue",
   this_week: "This week",
   next_30: "Next 30 days",
-  in_90: "30–90 days",
+  next_60: "30–60 days",
+  in_90: "60–90 days",
   later: "Later",
 };
 
-export const BAND_ORDER: Band[] = ["overdue", "this_week", "next_30", "in_90", "later"];
+export const BAND_ORDER: Band[] = ["overdue", "this_week", "next_30", "next_60", "in_90", "later"];

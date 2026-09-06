@@ -228,6 +228,13 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
         fields: { orderBy: { fieldKey: "asc" } },
         segments: { orderBy: { charStart: "asc" } },
         jobs: { orderBy: { createdAt: "desc" }, take: 1 },
+        invoiceHeader: true,
+        invoiceLineItems: true,
+        invoiceMatches: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { contract: { select: { id: true, filename: true, counterparty: true } } },
+        },
       },
     });
     if (!doc) throw notFound("Document not found.");
@@ -243,6 +250,39 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       : [];
     const pageByLine = new Map(lines.map((l) => [l.lineId, l.pageNumber]));
 
+    const h = doc.invoiceHeader;
+    const m = doc.invoiceMatches[0];
+    const invoice = h
+      ? {
+          header: {
+            billingFrom: h.billingFrom,
+            billingTo: h.billingTo,
+            invoiceDate: h.invoiceDate ? h.invoiceDate.toISOString().slice(0, 10) : null,
+            invoiceNumber: h.invoiceNumber,
+            currency: h.currency,
+            total: h.total,
+            confidenceTier: h.confidenceTier,
+          },
+          lineItems: doc.invoiceLineItems.map((li) => ({
+            id: li.id,
+            description: li.description,
+            quantity: li.quantity,
+            amount: li.amount,
+          })),
+          match: m
+            ? {
+                status: m.status,
+                confidenceTier: m.confidenceTier,
+                reasons: m.reasons,
+                matchedOn: m.matchedOn,
+                contract: m.contract
+                  ? { id: m.contract.id, filename: m.contract.filename, counterparty: m.contract.counterparty }
+                  : null,
+              }
+            : null,
+        }
+      : null;
+
     return {
       ...serializeDocumentSummary(doc),
       pages: doc.pages.map(serializePage),
@@ -252,6 +292,7 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
       })),
       segments: doc.segments.map(serializeSegment),
       job: serializeJobStatus(doc.jobs[0] ?? null),
+      invoice,
     };
   });
 

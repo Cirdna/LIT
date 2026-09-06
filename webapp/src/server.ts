@@ -11,6 +11,8 @@ import { registerCalendarRoutes } from "./routes/calendar.js";
 import { registerConflictRoutes } from "./routes/conflicts.js";
 import { registerHandoffRoutes } from "./routes/handoffs.js";
 import { registerPortfolioRoutes } from "./routes/portfolio.js";
+import { registerBenchmarkRoutes } from "./routes/benchmark.js";
+import { registerChatRoutes } from "./routes/chat.js";
 import { registerHealthRoutes } from "./routes/health.js";
 
 async function build() {
@@ -55,6 +57,8 @@ async function build() {
   await registerConflictRoutes(app);
   await registerHandoffRoutes(app);
   await registerPortfolioRoutes(app);
+  await registerBenchmarkRoutes(app);
+  await registerChatRoutes(app);
 
   return app;
 }

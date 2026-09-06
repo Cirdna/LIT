@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, type HandoffDTO } from "../lib/api";
+import { formatDate } from "../lib/format";
 import { ErrorState, Skeleton } from "../components/ui";
 
 export default function HandoffBrief() {
@@ -40,7 +41,7 @@ export default function HandoffBrief() {
           <p className="eyebrow">Handoff brief for a lawyer</p>
           <h1 className="mt-1 text-2xl font-bold text-ink">{brief.issue}</h1>
           <p className="mt-1 text-sm text-faint">
-            Prepared {new Date(brief.createdAt).toLocaleDateString()} · AITHENA reports facts from the documents; the
+            Prepared {formatDate(brief.createdAt)} · AITHENA reports facts from the documents; the
             judgement below needs a human.
           </p>
         </header>

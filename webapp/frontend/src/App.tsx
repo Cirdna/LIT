@@ -6,6 +6,7 @@ import Calendar from "./routes/Calendar";
 import Conflicts from "./routes/Conflicts";
 import HandoffBrief from "./routes/HandoffBrief";
 import Scope from "./routes/Scope";
+import Chat from "./routes/Chat";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/" element={<Portfolio />} />
         <Route path="/documents/:id" element={<DocumentDetail />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/chat" element={<Chat />} />
         <Route path="/conflicts" element={<Conflicts />} />
         <Route path="/handoffs/:id" element={<HandoffBrief />} />
         <Route path="/scope" element={<Scope />} />

@@ -1,12 +1,14 @@
 """Process one document end to end: run the pipeline, write the webapp tables.
 
-This is the real worker's answer to `scripts/stub-worker.ts`. It runs the same
-Stage 1-4 pipeline the CLI does, but instead of emitting a JSON file it writes
-directly into the tables Node reads — pages, text lines, extracted fields,
-calendar events — and copies the rendered page PNGs into shared storage.
+Two document kinds share the front of the pipeline (render + read the text) and
+then branch:
 
-It reuses the pipeline's own reconciliation and finding-assembly helpers so the
-grounding logic here is identical to `python -m pdf_analyzer.cli analyze`.
+  * contracts → the CUAD VLM extraction pass → extracted_fields + calendar.
+  * invoices  → text-LLM header/line-item extraction → reconciliation against
+    the contract portfolio (see worker/invoices.py).
+
+Invoices are detected from the page text BEFORE the expensive VLM pass, so an
+invoice never pays for a contract extraction it doesn't need.
 """
 
 from __future__ import annotations
@@ -30,6 +32,7 @@ from pdf_analyzer.stage3_reconcile import VERIFICATION_THRESHOLD, reconcile_phra
 
 from . import db, storage
 from .geometry import PageGeometry, anchor_lines_for_bbox, build_document_geometry
+from .invoices import looks_like_invoice, process_invoice
 from .mapping import (
     build_calendar,
     classify_doc_type,
@@ -43,20 +46,17 @@ logger = logging.getLogger("worker.process")
 PIPELINE_VERSION = "pdf-analyzer@0.1.0"
 
 
-def _run_pipeline(
-    input_path: Path,
-    work_dir: Path,
-    vlm_backend: VlmBackend,
-    dpi: int,
-    threshold: float,
-):
-    """Replicates pipeline.analyze_document but keeps the intermediates the
-    webapp needs (page renders and per-page word boxes)."""
+def _render_and_read(input_path: Path, work_dir: Path, dpi: int):
+    """Stage 1 render + Stage 2a word boxes — the part both kinds need."""
     ingest_result = ingest(input_path, work_dir, dpi=dpi)
-    page_image_paths = {p.page_number: p.image_path for p in ingest_result.pages}
     page_dims = {p.page_number: (p.width_px, p.height_px) for p in ingest_result.pages}
-
     ocr_results = extract_document_words(ingest_result.standardized_pdf, ingest_result.pages)
+    return ingest_result, ocr_results, page_dims
+
+
+def _extract_cuad(input_path: Path, ingest_result, ocr_results, vlm_backend: VlmBackend, threshold: float) -> ContractAnalysis:
+    """The contract-only VLM pass: extract → reconcile → 41 CUAD findings."""
+    page_image_paths = {p.page_number: p.image_path for p in ingest_result.pages}
     vlm_results = vlm_backend.extract_document(page_image_paths)
 
     cuad_extractions: dict[str, list] = {key: [] for key in CUAD_CLASSES}
@@ -68,7 +68,7 @@ def _run_pipeline(
             cuad_extractions[item.cuad_class].append(extraction)
 
     findings = {key: _finding_for(cuad_extractions[key]) for key in CUAD_CLASSES}
-    analysis = ContractAnalysis(
+    return ContractAnalysis(
         contract_id=input_path.stem,
         document_metadata=DocumentMetadata(
             source_file=input_path.name,
@@ -77,7 +77,6 @@ def _run_pipeline(
         ),
         cuad_findings=findings,
     )
-    return analysis, ocr_results, page_dims, ingest_result
 
 
 def _copy_page_images(document_id: str, ingest_result, dpi: int) -> None:
@@ -89,11 +88,6 @@ def _copy_page_images(document_id: str, ingest_result, dpi: int) -> None:
 
 
 def _resolve_anchors(field_row, pages_by_number: dict[int, PageGeometry]) -> list[str]:
-    """Turn a field's (page, bbox_1000) into anchor_line_ids.
-
-    Per the seam contract, an `inferred` value may legitimately have no anchor;
-    every other value with a page + box gets its overlapping lines.
-    """
     if field_row.confidence_tier == "inferred":
         return []
     if field_row.anchor_page is None or not field_row.anchor_bbox_1000:
@@ -135,19 +129,39 @@ def process_document(
     work_dir = storage.storage_root() / "tmp" / f"work-{document_id}"
     try:
         db.set_progress(conn, job_id, "rendering pages", 0.15)
-        analysis, ocr_results, page_dims, ingest_result = _run_pipeline(
-            original_path, work_dir, vlm_backend, dpi, threshold
-        )
-        db.set_progress(conn, job_id, "extracting fields", 0.8)
-
+        ingest_result, ocr_results, page_dims = _render_and_read(original_path, work_dir, dpi)
         pages, full_text = build_document_geometry(ocr_results, page_dims, dpi)
         pages_by_number = {p.page_number: p for p in pages}
         _copy_page_images(document_id, ingest_result, dpi)
 
-        doc_type, doc_type_conf = classify_doc_type(analysis, full_text)
         page_sources = [p.source for p in pages]
         provenance, ocr_applied, status = provenance_and_status(page_sources, original_ext)
 
+        # Shared: page images + text + line anchors, for either kind.
+        db.set_progress(conn, job_id, "writing pages", 0.45)
+        _write_pages_text(conn, document_id, dpi, pages, full_text)
+
+        if looks_like_invoice(full_text, doc["filename"]):
+            db.set_progress(conn, job_id, "reading invoice", 0.6)
+            match = process_invoice(
+                conn,
+                document_id=document_id,
+                workspace_id=workspace_id,
+                filename=doc["filename"],
+                full_text=full_text,
+                page_count=len(pages),
+                provenance=provenance,
+                ocr_applied=ocr_applied,
+                pipeline_version=PIPELINE_VERSION,
+            )
+            db.set_progress(conn, job_id, "done", 1.0)
+            logger.info("document %s: invoice, %d pages, match=%s", document_id, len(pages), match["status"])
+            return
+
+        # Contract branch — the CUAD VLM pass.
+        db.set_progress(conn, job_id, "extracting fields", 0.6)
+        analysis = _extract_cuad(original_path, ingest_result, ocr_results, vlm_backend, threshold)
+        doc_type, doc_type_conf = classify_doc_type(analysis, full_text)
         is_contract = doc_type != "not_a_contract"
         field_rows = map_fields(analysis) if is_contract else []
         counterparty = counterparty_from(analysis, user_hint) if is_contract else None
@@ -162,16 +176,14 @@ def process_document(
             warnings.append("One or more extracted values could not be verified against the page — shown as suspected errors.")
 
         db.set_progress(conn, job_id, "writing results", 0.9)
-        _write_results(
+        _write_contract_results(
             conn,
             document_id=document_id,
             workspace_id=workspace_id,
-            dpi=dpi,
-            full_text=full_text,
-            pages=pages,
+            page_count=len(pages),
+            pages_by_number=pages_by_number,
             field_rows=field_rows,
             events=events,
-            pages_by_number=pages_by_number,
             doc_type=doc_type,
             doc_type_conf=doc_type_conf,
             provenance=provenance,
@@ -182,45 +194,20 @@ def process_document(
         )
         db.set_progress(conn, job_id, "done", 1.0)
         logger.info(
-            "document %s: %d pages, %d fields, %d events, doc_type=%s",
+            "document %s: contract, %d pages, %d fields, %d events, doc_type=%s",
             document_id, len(pages), len(field_rows), len(events), doc_type,
         )
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 
 
-def _write_results(
-    conn: psycopg.Connection,
-    *,
-    document_id: str,
-    workspace_id: str,
-    dpi: int,
-    full_text: str,
-    pages: list[PageGeometry],
-    field_rows: list,
-    events: list,
-    pages_by_number: dict[int, PageGeometry],
-    doc_type: str,
-    doc_type_conf: float,
-    provenance: str,
-    ocr_applied: bool,
-    status: str,
-    counterparty: Optional[str],
-    warnings: list[str],
-) -> None:
-    """One transaction: clears prior derived rows, then writes everything."""
+def _write_pages_text(conn: psycopg.Connection, document_id: str, dpi: int, pages: list[PageGeometry], full_text: str) -> None:
+    """Shared write: document_text, document_pages, text_lines (idempotent)."""
     with conn.transaction(), conn.cursor() as cur:
-        # Idempotency: a re-run replaces this document's derived data. Node-owned
-        # rows (conflicts, handoffs, calendar acknowledgements) are keyed
-        # elsewhere; we only clear what this worker produces.
-        for table in ("text_lines", "document_pages", "document_segments",
-                      "extracted_fields", "calendar_events", "document_text"):
+        for table in ("text_lines", "document_pages", "document_text"):
             cur.execute(f"DELETE FROM {table} WHERE document_id=%s", (document_id,))
 
-        cur.execute(
-            "INSERT INTO document_text (document_id, text) VALUES (%s, %s)",
-            (document_id, full_text),
-        )
+        cur.execute("INSERT INTO document_text (document_id, text) VALUES (%s, %s)", (document_id, full_text))
 
         cur.executemany(
             """
@@ -260,7 +247,29 @@ def _write_results(
                 line_params,
             )
 
-        # Fields, capturing the created id per field_key for calendar links.
+
+def _write_contract_results(
+    conn: psycopg.Connection,
+    *,
+    document_id: str,
+    workspace_id: str,
+    page_count: int,
+    pages_by_number: dict[int, PageGeometry],
+    field_rows: list,
+    events: list,
+    doc_type: str,
+    doc_type_conf: float,
+    provenance: str,
+    ocr_applied: bool,
+    status: str,
+    counterparty: Optional[str],
+    warnings: list[str],
+) -> None:
+    """Contract branch: extracted_fields, calendar_events, document update."""
+    with conn.transaction(), conn.cursor() as cur:
+        for table in ("document_segments", "extracted_fields", "calendar_events"):
+            cur.execute(f"DELETE FROM {table} WHERE document_id=%s", (document_id,))
+
         field_id_by_key: dict[str, str] = {}
         for fr in field_rows:
             anchors = _resolve_anchors(fr, pages_by_number)
@@ -310,7 +319,7 @@ def _write_results(
             WHERE id=%s
             """,
             (
-                status, provenance, len(pages), ocr_applied, doc_type, doc_type_conf,
+                status, provenance, page_count, ocr_applied, doc_type, doc_type_conf,
                 counterparty, Json(warnings), PIPELINE_VERSION, document_id,
             ),
         )
