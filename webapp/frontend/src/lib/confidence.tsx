@@ -78,29 +78,32 @@ export function tierRank(t: ConfidenceTier): number {
 // tags and the label filter. It is DERIVED from the five tiers, never a
 // replacement — the full badge still tells the precise story. Colour still
 // travels with a glyph, so it survives colour-blindness and a projector.
-export type CoarseLabel = "quoted" | "inferred" | "NA";
+// The four review states shown on contract fields (and what the editor sets),
+// derived from the stored tier/absence. Colour always travels with a glyph.
+export type CoarseLabel = "quoted" | "inferred" | "evaluation_required" | "na";
 
 export function coarseLabel(field: FieldDTO): CoarseLabel {
-  if (field.valueVerbatim == null) return "NA"; // absent (not_present/not_found/illegible)
-  if (field.confidenceTier === "unverified") return "NA"; // suspected error
+  if (field.valueVerbatim == null) return "na"; // absent (not_present/not_found/illegible)
+  if (field.confidenceTier === "unverified") return "evaluation_required"; // needs a human decision
   if (field.confidenceTier === "verbatim" || field.confidenceTier === "normalised") return "quoted";
   return "inferred"; // assembled | inferred
 }
 
 export const COARSE_META: Record<CoarseLabel, { label: string; glyph: string; text: string; bg: string; border: string }> = {
-  quoted: { label: "quoted", glyph: "✓", text: "text-ok", bg: "bg-okbg", border: "border-ok/40" },
-  inferred: { label: "inferred", glyph: "~", text: "text-warn", bg: "bg-warnbg", border: "border-warn/50" },
-  NA: { label: "NA", glyph: "—", text: "text-alert", bg: "bg-alertbg", border: "border-alert/50" },
+  quoted: { label: "Quoted", glyph: "✓", text: "text-ok", bg: "bg-okbg", border: "border-ok/40" },
+  inferred: { label: "Inferred", glyph: "~", text: "text-warn", bg: "bg-warnbg", border: "border-warn/50" },
+  evaluation_required: { label: "Evaluation Required", glyph: "?", text: "text-navy", bg: "bg-navy/10", border: "border-navy/40" },
+  na: { label: "NA", glyph: "—", text: "text-alert", bg: "bg-alertbg", border: "border-alert/50" },
 };
 
-export const COARSE_LABELS: CoarseLabel[] = ["quoted", "inferred", "NA"];
+export const COARSE_LABELS: CoarseLabel[] = ["quoted", "inferred", "evaluation_required", "na"];
 
 export function CoarseTag({ label }: { label: CoarseLabel }) {
   const m = COARSE_META[label];
   return (
     <span
       className={`inline-flex items-center gap-1 rounded border ${m.border} ${m.bg} ${m.text} px-1.5 py-0.5 text-xs font-medium`}
-      title={`Confidence: ${m.label}`}
+      title={`State: ${m.label}`}
     >
       <span aria-hidden className="font-bold leading-none">{m.glyph}</span>
       {m.label}
@@ -139,7 +142,7 @@ export function ocrBand(mean: number | null): { word: string; tone: string } | n
  */
 export function reasonsFor(field: FieldDTO): string[] {
   const out: string[] = [];
-  if (field.confidenceTier === "unverified")
+  if (field.confidenceTier === "unverified" && !field.humanEdited)
     out.push("The quoted text was not found in the cited clause — treat this as a suspected error, not a value.");
   if (field.absenceReason === "illegible")
     out.push("The page it should appear on could not be read.");
@@ -154,7 +157,8 @@ export function reasonsFor(field: FieldDTO): string[] {
     out.push(`Competing readings: “${String(competing[0])}” vs “${String(competing[1])}”.`);
   if (field.claimType === "benchmark")
     out.push("This is our own reference range, not a statement about the law.");
-  if (field.confidenceTier === "inferred" && field.anchorLineIds.length === 0)
+  // Only for a *present* deduced value — an absent field reads NA, not Inferred.
+  if (field.confidenceTier === "inferred" && field.anchorLineIds.length === 0 && field.valueVerbatim != null)
     out.push("Inferred — there is no verbatim text in the document to point at.");
   return out;
 }

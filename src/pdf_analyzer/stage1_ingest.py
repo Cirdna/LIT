@@ -19,6 +19,7 @@ _PDF_POINTS_PER_INCH = 72.0
 
 _OFFICE_EXTENSIONS = {".docx", ".doc", ".rtf", ".odt"}
 _HTML_EXTENSIONS = {".html", ".htm"}
+_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".gif", ".webp"}
 
 
 class ConversionError(RuntimeError):
@@ -56,8 +57,34 @@ def convert_to_pdf(input_path: Path, out_dir: Path) -> Path:
         return _convert_office_to_pdf(input_path, out_dir)
     if suffix in _HTML_EXTENSIONS:
         return _convert_html_to_pdf(input_path, out_dir)
+    if suffix in _IMAGE_EXTENSIONS:
+        return _convert_image_to_pdf(input_path, out_dir)
 
     raise ConversionError(f"Unsupported input format: {suffix!r} ({input_path})")
+
+
+def _convert_image_to_pdf(input_path: Path, out_dir: Path) -> Path:
+    """Wrap an image (photo/scan of a document) into a single-page PDF.
+
+    The rest of the pipeline then treats it exactly like a scanned PDF: render
+    the page, find no native text layer, and fall back to Tesseract OCR. Handles
+    the common case of a user photographing or screenshotting a contract.
+    """
+    dest = out_dir / f"standardized_{input_path.stem}.pdf"
+    try:
+        image_doc = fitz.open(input_path)
+        pdf_bytes = image_doc.convert_to_pdf()
+        image_doc.close()
+        pdf = fitz.open("pdf", pdf_bytes)
+        if pdf.page_count < 1:
+            raise ConversionError(f"Image produced an empty PDF: {input_path}")
+        pdf.save(dest)
+        pdf.close()
+    except ConversionError:
+        raise
+    except Exception as exc:  # PyMuPDF raises its own types
+        raise ConversionError(f"Could not convert image {input_path} to PDF: {exc}") from exc
+    return dest
 
 
 def _validate_and_copy_pdf(input_path: Path, out_dir: Path) -> Path:

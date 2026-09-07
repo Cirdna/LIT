@@ -23,6 +23,7 @@ import time
 from pdf_analyzer.stage2_vlm import BACKENDS, OpenRouterError, build_vlm_backend
 
 from . import db, storage
+from .conflicts import run_conflict_detection
 from .process import process_document
 
 logger = logging.getLogger("worker")
@@ -114,8 +115,13 @@ def main(argv: list[str] | None = None) -> int:
 
             logger.info("job %s (%s) doc=%s", job["id"], job["job_type"], job["document_id"])
             try:
-                if job["document_id"]:
+                if job["job_type"] == "detect_conflicts":
+                    run_conflict_detection(conn, job["workspace_id"])
+                elif job["document_id"]:
                     process_document(conn, job, vlm_backend, dpi=args.dpi)
+                    # Debounced: re-check cross-contract conflicts once the batch settles.
+                    if not db.has_queued_jobs(conn):
+                        run_conflict_detection(conn, job["workspace_id"])
                 db.finish_job(conn, job["id"])
                 logger.info("done %s", job["id"])
             except Exception as exc:  # noqa: BLE001 — a failed doc must not kill the worker

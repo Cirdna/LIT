@@ -296,6 +296,58 @@ export async function registerDocumentRoutes(app: FastifyInstance) {
     };
   });
 
+  // ---- Human edit of a single extracted field (value + state) ------------
+  // The four review states map onto the stored confidence tier; a value edit or
+  // an "na" marks presence/absence. Marked human_edited for provenance.
+  const STATE_TO_TIER: Record<string, string> = {
+    quoted: "verbatim",
+    inferred: "inferred",
+    evaluation_required: "unverified",
+    na: "inferred",
+  };
+  const editFieldBody = z.object({
+    state: z.enum(["quoted", "inferred", "evaluation_required", "na"]),
+    value: z.string().max(4000).nullable().optional(),
+    clauseLabel: z.string().max(300).nullable().optional(),
+    editedBy: z.string().max(200).optional(),
+  });
+  app.patch<{ Params: { id: string; fieldId: string } }>(
+    "/api/documents/:id/fields/:fieldId",
+    async (req) => {
+      const body = editFieldBody.parse(req.body);
+      const field = await prisma.extractedField.findUnique({ where: { id: req.params.fieldId } });
+      if (!field || field.documentId !== req.params.id) throw notFound("Field not found on this document.");
+
+      const isNa = body.state === "na";
+      const value = isNa ? null : body.value !== undefined ? body.value : field.valueVerbatim;
+      const updated = await prisma.extractedField.update({
+        where: { id: field.id },
+        data: {
+          valueVerbatim: value,
+          confidenceTier: STATE_TO_TIER[body.state],
+          absenceReason: value == null ? "not_present" : null,
+          clauseLabel: body.clauseLabel !== undefined ? body.clauseLabel : field.clauseLabel,
+          humanEdited: true,
+          editedBy: body.editedBy ?? "andric.ang@gmail.com",
+          editedAt: new Date(),
+        },
+      });
+
+      // Resolve citation page from anchors, as the detail route does.
+      const lines = updated.anchorLineIds.length
+        ? await prisma.textLine.findMany({
+            where: { documentId: field.documentId, lineId: { in: updated.anchorLineIds } },
+            select: { lineId: true, pageNumber: true },
+          })
+        : [];
+      const pageByLine = new Map(lines.map((l) => [l.lineId, l.pageNumber]));
+      return {
+        ...serializeField(updated),
+        citationPage: updated.anchorLineIds.map((id) => pageByLine.get(id)).find((p) => p != null) ?? null,
+      };
+    },
+  );
+
   // ---- Lightweight status poll target ------------------------------------
   app.get<{ Params: { id: string } }>("/api/documents/:id/status", async (req) => {
     const doc = await prisma.document.findUnique({

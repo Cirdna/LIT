@@ -8,6 +8,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
@@ -27,6 +28,14 @@ from .stage3_reconcile import VERIFICATION_THRESHOLD
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pdf_analyzer", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+
+    conflicts = sub.add_parser(
+        "conflicts",
+        help="Find cross-contract conflicts across two or more result JSON files.",
+    )
+    conflicts.add_argument("inputs", type=Path, nargs="+", help="Two or more analyze-output JSON files.")
+    conflicts.add_argument("--output", type=Path, default=None, help="Write the report JSON here (default: stdout).")
+    conflicts.add_argument("--markdown", type=Path, default=None, help="Also write a markdown summary here.")
 
     analyze = sub.add_parser("analyze", help="Run the full pipeline on one document.")
     analyze.add_argument("input", type=Path, help="Path to a DOCX/HTML/RTF/PDF contract.")
@@ -105,9 +114,32 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
+        level=logging.DEBUG if getattr(args, "verbose", False) else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+
+    if args.command == "conflicts":
+        from .cross_contract import analyze, load_contracts, to_markdown
+
+        if len(args.inputs) < 2:
+            print("error: provide at least two result JSON files to compare.", file=sys.stderr)
+            return 1
+        missing = [str(p) for p in args.inputs if not p.exists()]
+        if missing:
+            print(f"error: input file(s) not found: {', '.join(missing)}", file=sys.stderr)
+            return 1
+
+        report = analyze(load_contracts(args.inputs))
+        payload = json.dumps(report, indent=2)
+        if args.output:
+            args.output.write_text(payload)
+            print(f"Wrote conflict report to {args.output} ({len(report['conflicts'])} conflicts)")
+        else:
+            print(payload)
+        if args.markdown:
+            args.markdown.write_text(to_markdown(report))
+            print(f"Wrote markdown summary to {args.markdown}")
+        return 0
 
     if args.command == "analyze":
         if not args.input.exists():

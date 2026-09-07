@@ -20,8 +20,13 @@ export type FieldDTO = {
   consistencyScore: number | null;
   vlmAgreement: number | null;
   modelVersion: string | null;
+  humanEdited: boolean;
+  editedBy: string | null;
+  editedAt: string | null;
   citationPage?: number | null; // resolved on the detail endpoint
 };
+
+export type FieldState = "quoted" | "inferred" | "evaluation_required" | "na";
 
 export type PageDTO = {
   id: string;
@@ -196,6 +201,12 @@ export const api = {
     ),
 
   document: (id: string) => req<DocumentDetail>(`/documents/${id}`),
+  updateField: (docId: string, fieldId: string, patch: { state: FieldState; value?: string | null; clauseLabel?: string | null }) =>
+    req<FieldDTO>(`/documents/${docId}/fields/${fieldId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    }),
   documentStatus: (id: string) =>
     req<{ id: string; status: string; stage: string | null; progress: number }>(`/documents/${id}/status`),
   documentText: (id: string) => req<{ documentId: string; text: string }>(`/documents/${id}/text`),
@@ -222,6 +233,7 @@ export const api = {
     }),
 
   conflicts: () => req<{ conflicts: ConflictDTO[] }>("/conflicts"),
+  recheckConflicts: () => req<{ enqueued: boolean; jobId: string }>("/conflicts/recheck", { method: "POST" }),
   handoffs: () => req<{ handoffs: HandoffDTO[] }>("/handoffs"),
   handoff: (id: string) => req<HandoffDTO>(`/handoffs/${id}`),
   createHandoff: (conflictId: string) =>

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type AnchorDTO, type FieldDTO, type BenchmarkDTO, type InvoiceDTO } from "../lib/api";
+import { api, type AnchorDTO, type FieldDTO, type FieldState, type BenchmarkDTO, type InvoiceDTO } from "../lib/api";
 import { DOC_TYPE_LABELS, FIELD_GROUPS } from "../lib/domain";
 import { formatDate } from "../lib/format";
 import { ConfidenceBadge, ocrBand, coarseLabel, COARSE_LABELS, CoarseTag, type CoarseLabel } from "../lib/confidence";
@@ -58,6 +58,12 @@ export default function DocumentDetail() {
     setHighlights(anchors);
     if (anchors[0]) setCurrentPage(anchors[0].page);
     viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  async function saveField(fieldId: string, patch: { state: FieldState; value: string | null }) {
+    await api.updateField(id, fieldId, patch);
+    await qc.invalidateQueries({ queryKey: ["document", id] });
+    qc.invalidateQueries({ queryKey: ["benchmarks", id] });
   }
 
   const isProcessing = PROCESSING.has(doc.status);
@@ -202,7 +208,7 @@ export default function DocumentDetail() {
               const active = labelFilter.size > 0;
               const rows = group.fields.map((def) => {
                 const matches = doc.fields.filter((f) => f.fieldKey === def.key);
-                const label: CoarseLabel = matches.length === 0 ? "NA" : coarseLabel(matches[0]);
+                const label: CoarseLabel = matches.length === 0 ? "na" : coarseLabel(matches[0]);
                 return { def, matches, label };
               });
               const shown = active ? rows.filter((r) => labelFilter.has(r.label)) : rows;
@@ -226,6 +232,7 @@ export default function DocumentDetail() {
                             page={field.citationPage ?? null}
                             active={activeFieldId === field.id}
                             onCite={cite}
+                            onSave={saveField}
                           />
                         ))
                       ),
@@ -317,7 +324,8 @@ const MATCH_META: Record<
 
 function InvoicePanel({ invoice }: { invoice: InvoiceDTO }) {
   const { header, lineItems, match } = invoice;
-  const money = (n: number | null) => (n == null ? "—" : `${header.currency ? header.currency + " " : ""}${n.toLocaleString()}`);
+  // All invoice amounts display with a $ symbol, never a currency code (USD/SGD/…).
+  const money = (n: number | null) => (n == null ? "—" : `$${n.toLocaleString()}`);
 
   return (
     <div className="space-y-5">

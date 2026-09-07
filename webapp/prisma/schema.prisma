@@ -207,6 +207,10 @@ model ExtractedField {
   vlmAgreement     Float?   @map("vlm_agreement") @db.Real
   modelVersion     String?  @map("model_version")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Human override (a reviewer edited the value and/or the confidence state).
+  humanEdited      Boolean   @default(false) @map("human_edited")
+  editedBy         String?   @map("edited_by")
+  editedAt         DateTime? @map("edited_at") @db.Timestamptz(6)
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
@@ -244,6 +248,7 @@ model Conflict {
   documentIds    String[] @map("document_ids") @db.Uuid
   fieldIds       String[] @default([]) @map("field_ids") @db.Uuid
   confidenceTier String   @map("confidence_tier")
+  source         String   @default("manual") // manual|stub|cross_contract
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
@@ -259,6 +264,7 @@ model HandoffBrief {
   established Json // what the tool determined, with citations
   question    String // the specific question needing a lawyer
   documentIds String[] @map("document_ids") @db.Uuid
+  source      String   @default("manual") // manual|stub|cross_contract
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])

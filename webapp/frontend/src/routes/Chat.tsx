@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { api, type ChatResult } from "../lib/api";
-import { ConfidenceBadge } from "../lib/confidence";
+import { ConfidenceBadge, CoarseTag } from "../lib/confidence";
 import { DOC_TYPE_LABELS } from "../lib/domain";
 
 type Msg = { role: "user" | "assistant"; content: string; results?: ChatResult[] };
@@ -140,7 +140,7 @@ function ResultCard({ r }: { r: ChatResult }) {
           ) : (
             <span className="text-muted italic">not present</span>
           )}
-          <ConfidenceBadge tier={f.confidenceTier} size="sm" />
+          {f.value != null ? <ConfidenceBadge tier={f.confidenceTier} size="sm" /> : <CoarseTag label="na" />}
           {f.clauseLabel && <span className="text-xs text-faint">{f.clauseLabel}</span>}
         </div>
       ))}

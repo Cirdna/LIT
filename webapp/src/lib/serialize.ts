@@ -34,6 +34,9 @@ export type FieldDTO = {
   consistencyScore: number | null;
   vlmAgreement: number | null;
   modelVersion: string | null;
+  humanEdited: boolean;
+  editedBy: string | null;
+  editedAt: string | null;
 };
 
 export function serializeField(f: ExtractedField): FieldDTO {
@@ -52,6 +55,9 @@ export function serializeField(f: ExtractedField): FieldDTO {
     consistencyScore: f.consistencyScore,
     vlmAgreement: f.vlmAgreement,
     modelVersion: f.modelVersion,
+    humanEdited: f.humanEdited,
+    editedBy: f.editedBy,
+    editedAt: f.editedAt ? f.editedAt.toISOString() : null,
   };
 }
 

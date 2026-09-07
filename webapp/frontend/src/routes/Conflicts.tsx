@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type ConflictDTO, type DocumentSummary, type FieldDTO } from "../lib/api";
 import { ConfidenceBadge } from "../lib/confidence";
 import { EmptyState, ErrorState, Skeleton } from "../components/ui";
@@ -11,7 +12,22 @@ const SEVERITY: Record<string, string> = {
 };
 
 export default function Conflicts() {
+  const qc = useQueryClient();
   const q = useQuery({ queryKey: ["conflicts"], queryFn: () => api.conflicts() });
+  const [rechecking, setRechecking] = useState(false);
+
+  const recheck = useMutation({
+    mutationFn: () => api.recheckConflicts(),
+    onMutate: () => setRechecking(true),
+    onSuccess: () => {
+      // The worker runs the engine asynchronously; refresh once it settles.
+      setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["conflicts"] });
+        setRechecking(false);
+      }, 3000);
+    },
+    onError: () => setRechecking(false),
+  });
 
   if (q.isLoading) return <Skeleton className="h-64" />;
   if (q.isError) return <ErrorState message={(q.error as Error).message} />;
@@ -19,7 +35,12 @@ export default function Conflicts() {
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold text-ink">Conflicts across your contracts</h1>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-ink">Conflicts across your contracts</h1>
+        <button className="btn btn-sm" onClick={() => recheck.mutate()} disabled={rechecking}>
+          {rechecking ? "Re-checking…" : "Re-check conflicts"}
+        </button>
+      </div>
       <p className="mb-5 text-muted">
         Where two agreements say things that cannot both be true. Each side is shown with its own citation and
         confidence — a conflict is exactly the kind of question a lawyer should settle.

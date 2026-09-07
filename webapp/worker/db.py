@@ -147,6 +147,12 @@ def reap_stalled_jobs(conn: psycopg.Connection) -> None:
         )
 
 
+def has_queued_jobs(conn: psycopg.Connection) -> bool:
+    """Any ingest work still waiting — used to debounce portfolio-wide passes."""
+    row = conn.execute("SELECT 1 FROM jobs WHERE status='queued' LIMIT 1").fetchone()
+    return row is not None
+
+
 def set_progress(conn: psycopg.Connection, job_id: str, stage: str, progress: float) -> None:
     with conn.transaction():
         conn.execute(

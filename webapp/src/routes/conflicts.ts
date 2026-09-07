@@ -30,4 +30,14 @@ export async function registerConflictRoutes(app: FastifyInstance) {
       })),
     };
   });
+
+  // Manual re-check: enqueue a detect_conflicts job for the Python worker to run
+  // the cross-contract engine over the whole portfolio.
+  app.post("/api/conflicts/recheck", async () => {
+    const workspaceId = await getWorkspaceId();
+    const job = await prisma.job.create({
+      data: { workspaceId, jobType: "detect_conflicts", status: "queued" },
+    });
+    return { enqueued: true, jobId: job.id };
+  });
 }
